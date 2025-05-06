@@ -10,7 +10,6 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen w-full bg-white">
-      {/* Navbar */}
       <nav className="bg-white border-b border-gray-100 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
@@ -44,7 +43,7 @@ export default function Landing() {
               </button>
             </div>
           </div>
-          {/* Mobile menu */}
+
           {menuOpen && (
             <div className="md:hidden mt-2 flex flex-col gap-2 pb-4">
               <Link href="/login" className="text-gray-600 hover:text-sky-600 transition-colors px-2 py-2 rounded">
@@ -61,7 +60,6 @@ export default function Landing() {
         </div>
       </nav>
 
-      {/* Hero Section - Simplificado apenas com texto */}
       <section className="py-24 md:py-32 h-screen flex items-center pattern-point">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.h1
@@ -99,7 +97,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Features Section - Mantido o existente */}
       <section id="features" className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -163,7 +160,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* How it Works - Mantido o existente */}
       <section id="how-it-works" className="py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -216,7 +212,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* CTA Section - Mantido o existente */}
       <section className="py-16 sm:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -238,7 +233,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Footer - Redesenhado minimalista */}
       <footer className="py-12 bg-white border-t border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center justify-between">

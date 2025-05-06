@@ -42,7 +42,6 @@ type LoginFormData = {
   rememberMe: boolean;
 };
 
-// Variantes para animações
 const containerVariants = {
   hidden: { opacity: 0 },
   show: {
@@ -145,7 +144,6 @@ export default function Login() {
 
   return (
     <div className="min-h-screen w-full flex flex-col md:flex-row">
-      {/* Lado esquerdo - Informações e branding */}
       <div className="hidden md:flex md:w-1/3 bg-gradient-to-br from-sky-600 to-sky-900 text-white p-8 lg:p-16 flex-col justify-between relative overflow-hidden">
         <div className="absolute inset-0 z-0 opacity-20">
           <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] bg-repeat"></div>
@@ -195,7 +193,6 @@ export default function Login() {
         </motion.div>
       </div>
 
-      {/* Lado direito - Formulário */}
       <div className="flex-1 flex  items-center justify-center p-6 md:p-12 bg-gray-50 pattern-point">
         <div className="w-full max-w-md ">
           <AnimatePresence mode="wait">
@@ -402,7 +399,6 @@ export default function Login() {
             </CardContent>
           </Card>
 
-          {/* Versão mobile da branding */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

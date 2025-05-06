@@ -1,77 +1,30 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import {
-  FiSave,
-  FiArrowLeft,
-  FiCalendar,
-  FiAlertCircle,
-  FiClock,
-  FiBookmark,
-  FiChevronDown,
-  FiChevronRight,
-  FiFileText,
-  FiAward,
-  FiMapPin,
-  FiCheckCircle,
-} from "react-icons/fi";
-import { format, addDays, isWeekend, startOfDay, isToday, isTomorrow } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { FiFileText, FiArrowLeft, FiAlertCircle, FiAward } from "react-icons/fi";
+import { startOfDay } from "date-fns";
 import apiFetch from "@/core/api/fetcher";
 import { getUser } from "@/core/utils/getUser";
-
-// Shadcn Components
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Label } from "@/components/ui/label";
 import { Status } from "@/core/enum/status.enum";
 
-// Componente de botão de data estilizado
-interface DateChipProps {
-  selected: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-  icon?: React.ReactNode;
-}
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Label } from "@/components/ui/label";
 
-const DateChip: React.FC<DateChipProps> = ({ selected, onClick, children, icon = null }) => (
-  <button
-    type="button"
-    className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg text-xs font-medium transition-all duration-150 flex items-center gap-1
-      ${
-        selected
-          ? "bg-gradient-to-br from-blue-50 to-blue-100 text-blue-700 shadow-sm ring-1 ring-blue-200"
-          : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:border-slate-300"
-      }`}
-    onClick={onClick}
-  >
-    {icon}
-    {children}
-  </button>
-);
+import HeaderCard from "@/core/components/Cads/HeaderCard";
+import CreateFooter from "@/core/components/Cads/CreateFooter";
+import DataSelect from "@/core/components/Select/DataSelect";
+import MateriaSelect from "@/core/components/Select/MateriaSelect";
+import StatusSelect from "@/core/components/Select/StatusSelect";
 
 interface Materia {
   id: string;
   nome: string;
   cor: string;
 }
-
-const getNextBusinessDay = (date: Date): Date => {
-  const nextDay = new Date(date);
-  nextDay.setDate(nextDay.getDate() + 1);
-
-  while (isWeekend(nextDay)) {
-    nextDay.setDate(nextDay.getDate() + 1);
-  }
-
-  return nextDay;
-};
 
 export default function NovaProva() {
   const router = useRouter();
@@ -83,8 +36,8 @@ export default function NovaProva() {
     titulo: "",
     descricao: "",
     data: today.toISOString().split("T")[0],
-    duracao: 60,
     nota: 0,
+    duracao: 90,
     materiaId: "",
     local: "",
     status: Status.PENDENTE,
@@ -92,8 +45,6 @@ export default function NovaProva() {
   });
 
   const [error, setError] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date>(today);
-  const [showDatePicker, setShowDatePicker] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -115,29 +66,8 @@ export default function NovaProva() {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    if (showDatePicker) {
-      const handleOutsideClick = (e: any) => {
-        if (!e.target.closest(".date-picker-container")) {
-          setShowDatePicker(false);
-        }
-      };
-
-      document.addEventListener("mousedown", handleOutsideClick);
-      return () => document.removeEventListener("mousedown", handleOutsideClick);
-    }
-  }, [showDatePicker]);
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>, name: string) => {
-    const value = parseFloat(e.target.value) || 0;
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -149,45 +79,6 @@ export default function NovaProva() {
       ...prev,
       [name]: value,
     }));
-  };
-
-  const handleDateChange = (date: Date) => {
-    setSelectedDate(date);
-    setFormData((prev) => ({
-      ...prev,
-      data: date.toISOString().split("T")[0],
-    }));
-  };
-
-  const setQuickDate = (option: "today" | "tomorrow" | "nextBusinessDay" | "nextWeek") => {
-    let newDate: Date;
-
-    switch (option) {
-      case "today":
-        newDate = today;
-        break;
-      case "tomorrow":
-        newDate = addDays(today, 1);
-        break;
-      case "nextBusinessDay":
-        newDate = getNextBusinessDay(today);
-        break;
-      case "nextWeek":
-        newDate = addDays(today, 7);
-        break;
-      default:
-        newDate = today;
-    }
-
-    handleDateChange(newDate);
-  };
-
-  const handleManualDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const dateValue = e.target.value;
-    if (dateValue) {
-      const date = new Date(dateValue);
-      handleDateChange(date);
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -203,11 +94,6 @@ export default function NovaProva() {
       return;
     }
 
-    if (!formData.local.trim()) {
-      setError("Por favor, informe o local da prova.");
-      return;
-    }
-
     setIsLoading(true);
     setError(null);
 
@@ -216,9 +102,9 @@ export default function NovaProva() {
         titulo: formData.titulo.trim(),
         descricao: formData.descricao,
         data: new Date(formData.data),
-        duracao: formData.duracao,
         nota: formData.nota !== undefined ? Number(formData.nota) : 0,
-        local: formData.local.trim(),
+        duracao: formData.duracao !== undefined ? Number(formData.duracao) : 90,
+        local: formData.local.trim() || "Sem local definido",
         status: formData.status,
         materiaId: formData.materiaId,
         usuarioId: getUser?.id || "",
@@ -238,82 +124,20 @@ export default function NovaProva() {
     }
   };
 
-  const selectedMateriaColor = materias.find((m) => m.id === formData.materiaId)?.cor || "#8b5cf6";
-
-  const isDateAlertRange = (date: Date): boolean => {
-    const diffTime = date.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays >= 0 && diffDays <= 7;
-  };
-
-  const getFriendlyDateText = (date: Date): string => {
-    if (isToday(date)) return "Hoje";
-    if (isTomorrow(date)) return "Amanhã";
-    return format(date, "dd 'de' MMMM, yyyy", { locale: ptBR });
-  };
-
-  const generateCalendarDays = () => {
-    const currentDate = new Date(selectedDate);
-    currentDate.setDate(1);
-
-    const month = currentDate.getMonth();
-    const year = currentDate.getFullYear();
-
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const firstDayOfWeek = new Date(year, month, 1).getDay();
-
-    const days = [];
-
-    for (let i = 0; i < firstDayOfWeek; i++) {
-      const previousMonthDate = new Date(year, month, -i);
-      days.unshift({
-        date: previousMonthDate,
-        isCurrentMonth: false,
-        isToday: isToday(previousMonthDate),
-        isSelected: false,
-      });
-    }
-
-    for (let i = 1; i <= daysInMonth; i++) {
-      const date = new Date(year, month, i);
-      days.push({
-        date,
-        isCurrentMonth: true,
-        isToday: isToday(date),
-        isSelected:
-          date.getDate() === selectedDate.getDate() &&
-          date.getMonth() === selectedDate.getMonth() &&
-          date.getFullYear() === selectedDate.getFullYear(),
-      });
-    }
-
-    return days;
-  };
-
-  const calendarDays = generateCalendarDays();
+  const selectedMateriaColor = materias.find((m) => m.id === formData.materiaId)?.cor || "#3b82f6";
 
   return (
-    <div className="container max-w-6xl mx-auto px-2 sm:px-5 py-6 animate-in fade-in duration-500">
-      {/* Cabeçalho */}
-      <div className="flex items-center justify-between mb-4 sm:mb-6 pb-2 sm:pb-3 border-b border-slate-200">
-        <div className="items-center flex flex-row gap-2 sm:gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full h-8 w-8 sm:h-9 sm:w-9 hover:bg-white hover:shadow-sm transition-all duration-200"
-            onClick={() => router.back()}
-          >
-            <FiArrowLeft size={16} className="sm:text-lg" />
-          </Button>
-          <div>
-            <h1 className="text-lg sm:text-xl font-bold text-slate-800">Nova Prova</h1>
-            <p className="text-xs text-slate-500 mt-0.5 hidden sm:block">Adicione suas próximas provas</p>
-          </div>
-        </div>
-      </div>
+    <div className="container max-w-4xl mx-auto px-2 sm:px-5 py-6 animate-in fade-in duration-500">
+      <HeaderCard
+        title="Nova Prova"
+        description="Adicione suas próximas avaliações à agenda"
+        buttonLabel="Voltar para Provas"
+        buttonHref="/admin/provas"
+        buttonIcon={<FiArrowLeft className="mr-2" />}
+        buttonColor="sky"
+      />
 
-      {/* Formulário */}
-      <Card className="w-full max-w-6xl mx-auto shadow-md bg-white p-0 border-0 rounded-lg sm:rounded-xl overflow-hidden">
+      <Card className="w-full max-w-4xl mx-auto shadow-md bg-white p-0 border-0 rounded-lg sm:rounded-xl overflow-hidden">
         <CardHeader
           className="pb-3 sm:pb-4 px-4 sm:px-6 pt-4 sm:pt-6"
           style={{
@@ -323,7 +147,7 @@ export default function NovaProva() {
         >
           <CardTitle className="text-base sm:text-lg flex items-center gap-2">
             <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full" style={{ backgroundColor: selectedMateriaColor }}></div>
-            <span>Registrar Nova Prova</span>
+            <span>Detalhes da Prova</span>
             <div className="ml-auto text-xs text-slate-500 font-normal">*Obrigatório</div>
           </CardTitle>
         </CardHeader>
@@ -338,25 +162,51 @@ export default function NovaProva() {
 
           <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
             <div className="space-y-4 sm:space-y-6">
-              {/* Título e Descrição */}
               <div className="grid grid-cols-1 gap-4 sm:gap-5">
-                <div>
-                  <Label
-                    htmlFor="titulo"
-                    className="text-xs sm:text-sm font-medium mb-1 sm:mb-1.5 flex items-center text-slate-700"
-                  >
-                    <FiFileText className="mr-1.5 sm:mr-2 text-purple-500" size={14} />
-                    Título <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="titulo"
-                    name="titulo"
-                    value={formData.titulo}
-                    onChange={handleChange}
-                    placeholder="Ex: Prova de Matemática - Trigonometria"
-                    required
-                    className="h-10 sm:h-12 text-sm bg-white shadow-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-400 focus-visible:ring-offset-0"
-                  />
+                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                  <div className="w-full sm:w-3/4">
+                    <Label
+                      htmlFor="titulo"
+                      className="text-xs sm:text-sm font-medium mb-1 sm:mb-1.5 flex justify-between items-center text-slate-700"
+                    >
+                      <div className="flex items-center">
+                        <FiFileText className="mr-1.5 text-sky-500" size={14} />
+                        Título <span className="text-red-500">*</span>
+                      </div>
+                      <div className="text-slate-400 text-xs font-normal">{formData.titulo.length}/100</div>
+                    </Label>
+                    <Input
+                      id="titulo"
+                      name="titulo"
+                      value={formData.titulo}
+                      onChange={handleChange}
+                      placeholder="Ex: Prova de Matemática - Trigonometria"
+                      required
+                      maxLength={100}
+                      className="h-10 sm:h-12 text-sm bg-white shadow-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
+                    />
+                  </div>
+                  <div className="w-full sm:w-1/4">
+                    <Label
+                      htmlFor="nota"
+                      className="text-xs sm:text-sm font-medium mb-1 sm:mb-1.5 flex items-center text-slate-700"
+                    >
+                      <FiAward className="mr-1.5 text-sky-500" size={14} />
+                      Valor <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="nota"
+                      name="nota"
+                      type="number"
+                      min="0"
+                      max="10"
+                      step="0.1"
+                      value={formData.nota}
+                      onChange={handleChange}
+                      placeholder="Ex: 10.0"
+                      className="h-10 sm:h-12 text-sm bg-white shadow-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -364,7 +214,7 @@ export default function NovaProva() {
                     htmlFor="descricao"
                     className="text-xs sm:text-sm font-medium mb-1 sm:mb-1.5 flex items-center text-slate-700"
                   >
-                    <FiFileText className="mr-1.5 sm:mr-2 text-purple-500" size={14} />
+                    <FiFileText className="mr-1.5 text-sky-500" size={14} />
                     Descrição
                   </Label>
                   <Textarea
@@ -373,7 +223,7 @@ export default function NovaProva() {
                     value={formData.descricao}
                     onChange={handleChange}
                     placeholder="Anotações sobre a prova, conteúdos que serão cobrados, dicas, etc."
-                    className="resize-none min-h-[80px] sm:min-h-[110px] text-sm bg-white shadow-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-400 focus-visible:ring-offset-0"
+                    className="resize-none min-h-[80px] sm:min-h-[110px] text-sm bg-white shadow-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
                     rows={4}
                   />
                 </div>
@@ -381,409 +231,43 @@ export default function NovaProva() {
 
               <Separator className="my-4 sm:my-6 bg-slate-100" />
 
-              {/* Data da prova */}
-              <div>
-                <Label
-                  htmlFor="data"
-                  className="text-xs sm:text-sm font-medium mb-2 sm:mb-3 text-slate-700 flex items-center"
-                >
-                  <FiCalendar className="mr-1.5 sm:mr-2 text-purple-500" size={14} />
-                  Data da prova <span className="text-red-500">*</span>
-                </Label>
-
-                {/* Botões de data rápida */}
-                <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 mb-3 sm:mb-4">
-                  <DateChip
-                    selected={isToday(selectedDate)}
-                    onClick={() => setQuickDate("today")}
-                    icon={<FiClock size={12} className="text-purple-500" />}
-                  >
-                    Hoje
-                  </DateChip>
-
-                  <DateChip
-                    selected={isTomorrow(selectedDate)}
-                    onClick={() => setQuickDate("tomorrow")}
-                    icon={<FiChevronRight size={12} className="text-green-500" />}
-                  >
-                    Amanhã
-                  </DateChip>
-
-                  <DateChip
-                    selected={
-                      !isToday(selectedDate) &&
-                      !isTomorrow(selectedDate) &&
-                      selectedDate.getTime() === getNextBusinessDay(today).getTime()
-                    }
-                    onClick={() => setQuickDate("nextBusinessDay")}
-                  >
-                    Próx. dia útil
-                  </DateChip>
-
-                  <DateChip
-                    selected={selectedDate.getTime() === addDays(today, 7).getTime()}
-                    onClick={() => setQuickDate("nextWeek")}
-                  >
-                    Próx. semana
-                  </DateChip>
-                </div>
-
-                {/* Entrada manual de data estilizada */}
-                <div className="relative date-picker-container">
-                  <div
-                    className={`flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-3 border rounded-lg cursor-pointer transition-all duration-200
-                      ${
-                        isDateAlertRange(selectedDate)
-                          ? "bg-gradient-to-r from-amber-50 to-white border-amber-200 text-amber-800"
-                          : "bg-white border-slate-200 text-slate-700 hover:border-blue-300 hover:bg-blue-50"
-                      }
-                      ${showDatePicker ? "ring-2 ring-blue-200 border-blue-300" : ""}
-                    `}
-                    onClick={() => setShowDatePicker(!showDatePicker)}
-                  >
-                    <div
-                      className={`p-1.5 sm:p-2 rounded-full ${
-                        isDateAlertRange(selectedDate) ? "bg-amber-100" : "bg-purple-100"
-                      }`}
-                    >
-                      <FiCalendar
-                        className={`h-4 w-4 sm:h-5 sm:w-5 ${
-                          isDateAlertRange(selectedDate) ? "text-amber-600" : "text-purple-600"
-                        }`}
-                      />
-                    </div>
-
-                    <div className="flex-1">
-                      <div className="text-xs sm:text-sm font-medium">{getFriendlyDateText(selectedDate)}</div>
-                      <div className="text-[10px] sm:text-xs text-slate-500">
-                        {format(selectedDate, "EEEE", { locale: ptBR })}
-                      </div>
-                    </div>
-
-                    {isDateAlertRange(selectedDate) && (
-                      <div className="flex items-center gap-1 text-[10px] sm:text-xs bg-amber-100 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-amber-700">
-                        <FiClock size={10} className="sm:hidden" />
-                        <FiClock size={12} className="hidden sm:block" />
-                        {isToday(selectedDate) ? "Hoje" : isTomorrow(selectedDate) ? "Amanhã" : "Em breve"}
-                      </div>
-                    )}
-
-                    <FiChevronDown
-                      size={16}
-                      className={`text-slate-400 transition-transform duration-200 ${
-                        showDatePicker ? "transform rotate-180" : ""
-                      }`}
-                    />
-                  </div>
-
-                  {/* Calendário customizado */}
-                  {showDatePicker && (
-                    <div className="absolute z-50 mt-1 bottom-0 right-0 bg-white rounded-lg shadow-xl border border-slate-200 p-2 sm:p-3 w-full sm:max-w-md">
-                      <div className="mb-2 flex justify-between items-center">
-                        <button
-                          type="button"
-                          className="p-1 rounded-md hover:bg-slate-100 text-slate-700"
-                          onClick={() => {
-                            const newDate = new Date(selectedDate);
-                            newDate.setMonth(newDate.getMonth() - 1);
-                            handleDateChange(newDate);
-                          }}
-                        >
-                          <FiChevronLeft size={16} />
-                        </button>
-
-                        <div className="text-xs sm:text-sm font-medium text-slate-700">
-                          {format(selectedDate, "MMMM yyyy", { locale: ptBR })}
-                        </div>
-
-                        <button
-                          type="button"
-                          className="p-1 rounded-md hover:bg-slate-100 text-slate-700"
-                          onClick={() => {
-                            const newDate = new Date(selectedDate);
-                            newDate.setMonth(newDate.getMonth() + 1);
-                            handleDateChange(newDate);
-                          }}
-                        >
-                          <FiChevronRight size={16} />
-                        </button>
-                      </div>
-
-                      <div className="grid grid-cols-7 gap-0.5 sm:gap-1 mb-1 sm:mb-2">
-                        {["D", "S", "T", "Q", "Q", "S", "S"].map((day, index) => (
-                          <div
-                            key={index}
-                            className="text-[10px] sm:text-xs text-center text-slate-500 font-medium p-1"
-                          >
-                            {day}
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
-                        {calendarDays.map((day, index) => (
-                          <button
-                            key={index}
-                            type="button"
-                            disabled={!day.isCurrentMonth}
-                            className={`
-                              p-0.5 sm:p-1 rounded-md text-[10px] sm:text-xs text-center h-7 sm:h-8 flex items-center justify-center
-                              ${day.isCurrentMonth ? "hover:bg-purple-50" : "opacity-50 cursor-not-allowed"}
-                              ${day.isToday ? "ring-1 ring-purple-300" : ""}
-                              ${day.isSelected ? "bg-purple-500 text-white hover:bg-purple-600" : ""}
-                            `}
-                            onClick={() => {
-                              if (day.isCurrentMonth) {
-                                handleDateChange(day.date);
-                                setShowDatePicker(false);
-                              }
-                            }}
-                          >
-                            {day.date.getDate()}
-                          </button>
-                        ))}
-                      </div>
-
-                      <div className="mt-2 sm:mt-3 grid grid-cols-2 gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="text-[10px] sm:text-xs h-7 sm:h-8 w-full"
-                          onClick={() => {
-                            handleDateChange(today);
-                            setShowDatePicker(false);
-                          }}
-                        >
-                          Hoje
-                        </Button>
-                        <Button
-                          type="button"
-                          className="text-[10px] sm:text-xs h-7 sm:h-8 w-full bg-purple-500 hover:bg-purple-600 text-white"
-                          onClick={() => setShowDatePicker(false)}
-                        >
-                          Selecionar
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Input nativo oculto para acessibilidade */}
-                  <input
-                    type="date"
-                    id="data"
-                    name="data"
-                    value={formData.data}
-                    onChange={handleManualDateChange}
-                    className="opacity-0 absolute top-0 left-0 w-0 h-0"
-                  />
-                </div>
-              </div>
+              <DataSelect
+                htmlFor="data"
+                label="Data da prova"
+                value={formData.data}
+                onChange={(value) => handleSelectChange("data", value)}
+                required
+              />
 
               <Separator className="my-4 sm:my-6 bg-slate-100" />
 
-              {/* Informações específicas da prova */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-                <div>
-                  <Label
-                    htmlFor="duracao"
-                    className="text-xs sm:text-sm font-medium mb-1 sm:mb-1.5 flex items-center text-slate-700"
-                  >
-                    <FiClock className="mr-1.5 sm:mr-2 text-purple-500" size={14} />
-                    Duração (minutos) <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="duracao"
-                    name="duracao"
-                    type="number"
-                    min={1}
-                    value={formData.duracao}
-                    onChange={(e) => handleNumberChange(e, "duracao")}
-                    placeholder="Ex: 60"
-                    className="h-10 sm:h-12 text-sm bg-white shadow-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-400 focus-visible:ring-offset-0"
-                  />
-                </div>
+                <MateriaSelect
+                  htmlFor="materia"
+                  value={formData.materiaId}
+                  onValueChange={(value) => handleSelectChange("materiaId", value)}
+                  materias={materias}
+                  required
+                />
 
-                <div>
-                  <Label
-                    htmlFor="nota"
-                    className="text-xs sm:text-sm font-medium mb-1 sm:mb-1.5 flex items-center text-slate-700"
-                  >
-                    <FiAward className="mr-1.5 sm:mr-2 text-purple-500" size={14} />
-                    Valor da Prova <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="nota"
-                    name="nota"
-                    type="number"
-                    min="0"
-                    max="10"
-                    step="0.1"
-                    value={formData.nota}
-                    onChange={handleChange}
-                    placeholder="Ex: 10.0"
-                    className="h-10 sm:h-12 text-sm bg-white shadow-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-400 focus-visible:ring-offset-0"
-                  />
-                </div>
-
-                <div>
-                  <Label
-                    htmlFor="local"
-                    className="text-xs sm:text-sm font-medium mb-1 sm:mb-1.5 flex items-center text-slate-700"
-                  >
-                    <FiMapPin className="mr-1.5 sm:mr-2 text-purple-500" size={14} />
-                    Local <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="local"
-                    name="local"
-                    value={formData.local}
-                    onChange={handleChange}
-                    placeholder="Ex: Sala 101"
-                    required
-                    className="h-10 sm:h-12 text-sm bg-white shadow-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-400 focus-visible:ring-offset-0"
-                  />
-                </div>
-
-                <div>
-                  <Label
-                    htmlFor="status"
-                    className="text-xs sm:text-sm font-medium mb-1 sm:mb-1.5 text-slate-700 flex items-center"
-                  >
-                    <FiCheckCircle className="mr-1.5 sm:mr-2 text-purple-500" size={14} />
-                    Status <span className="text-red-500">*</span>
-                  </Label>
-                  <Select value={formData.status} onValueChange={(value) => handleSelectChange("status", value)}>
-                    <SelectTrigger className="w-full h-10 sm:h-12 text-xs sm:text-sm bg-white shadow-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-400">
-                      <SelectValue placeholder="Selecione o status" />
-                    </SelectTrigger>
-                    <SelectContent
-                      className="max-h-[200px] sm:max-h-[300px] border-slate-200 bg-white"
-                      position="popper"
-                    >
-                      <SelectItem
-                        value={Status.PENDENTE}
-                        className="hover:bg-slate-50 cursor-pointer text-xs sm:text-sm"
-                      >
-                        Pendente
-                      </SelectItem>
-                      <SelectItem
-                        value={Status.EM_ANDAMENTO}
-                        className="hover:bg-slate-50 cursor-pointer text-xs sm:text-sm"
-                      >
-                        Estudando
-                      </SelectItem>
-                      <SelectItem
-                        value={Status.CONCLUIDO}
-                        className="hover:bg-slate-50 cursor-pointer text-xs sm:text-sm"
-                      >
-                        Realizada
-                      </SelectItem>
-                      <SelectItem
-                        value={Status.CANCELADO}
-                        className="hover:bg-slate-50 cursor-pointer text-xs sm:text-sm"
-                      >
-                        Corrigida
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Matéria */}
-              <div className="mt-2 sm:mt-3">
-                <Label
-                  htmlFor="materiaId"
-                  className="text-xs sm:text-sm font-medium mb-1 sm:mb-1.5 text-slate-700 flex items-center"
-                >
-                  <FiBookmark className="mr-1.5 sm:mr-2 text-purple-500" size={14} />
-                  Matéria <span className="text-red-500">*</span>
-                </Label>
-                <Select value={formData.materiaId} onValueChange={(value) => handleSelectChange("materiaId", value)}>
-                  <SelectTrigger
-                    className="w-full h-10 sm:h-12 text-xs sm:text-sm bg-white shadow-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-400"
-                    style={
-                      formData.materiaId
-                        ? { borderColor: selectedMateriaColor, borderWidth: "1px", color: selectedMateriaColor }
-                        : {}
-                    }
-                  >
-                    <SelectValue placeholder="Selecione uma matéria" />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-[200px] sm:max-h-[300px] border-slate-200 bg-white" position="popper">
-                    {materias.map((materia) => (
-                      <SelectItem
-                        key={materia.id}
-                        value={materia.id}
-                        className="hover:bg-slate-50 cursor-pointer text-xs sm:text-sm"
-                      >
-                        <div className="flex items-center">
-                          <div
-                            className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full mr-2"
-                            style={{ backgroundColor: materia.cor }}
-                          ></div>
-                          {materia.nome}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <StatusSelect
+                  htmlFor="status"
+                  value={formData.status}
+                  onValueChange={(value) => handleSelectChange("status", value)}
+                  required
+                />
               </div>
             </div>
           </form>
         </CardContent>
 
-        {/* Footer com botões */}
-        <CardFooter className="flex flex-row sm:flex-row justify-end gap-2 sm:gap-3 py-4 sm:py-5 px-4 sm:px-6 md:px-8 border-t bg-gradient-to-r from-slate-50 to-white">
-          <Button
-            variant="outline"
-            onClick={() => router.back()}
-            className="w-auto px-4 sm:px-5 text-xs sm:text-sm font-medium hover:bg-slate-100 border-slate-200 order-2 sm:order-1"
-          >
-            Cancelar
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={isLoading}
-            className="p-2 w-auto px-4 sm:px-6 font-medium text-xs sm:text-sm gap-2 shadow-md order-1 sm:order-2"
-            style={{
-              background: `linear-gradient(to right, ${selectedMateriaColor}, ${selectedMateriaColor}ee)`,
-              borderColor: selectedMateriaColor,
-            }}
-          >
-            {isLoading ? (
-              <>
-                <div className="animate-spin w-4 h-4 sm:w-5 sm:h-5 border-2 sm:border-3 border-white border-opacity-50 border-t-transparent rounded-full"></div>
-                <span>Salvando...</span>
-              </>
-            ) : (
-              <>
-                <FiSave size={14} className="sm:hidden" />
-                <FiSave size={16} className="hidden sm:block" />
-                <span className="sm:hidden">Salvar</span>
-                <span className="hidden sm:block">Salvar prova</span>
-              </>
-            )}
-          </Button>
-        </CardFooter>
+        <CreateFooter
+          handleSubmit={handleSubmit}
+          isLoading={isLoading}
+          selectedMateriaColor={selectedMateriaColor}
+          saveButtonLabel="Salvar prova"
+        />
       </Card>
     </div>
   );
 }
-
-// Componente auxiliar FiChevronLeft que faltava nas importações
-const FiChevronLeft = ({ size = 24, className = "" }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={`feather feather-chevron-left ${className}`}
-  >
-    <polyline points="15 18 9 12 15 6"></polyline>
-  </svg>
-);

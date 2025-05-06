@@ -26,7 +26,6 @@ import apiFetch from "@/core/api/fetcher";
 import { Status } from "@/core/enum/status.enum";
 import { ModalDelete } from "@/core/components/Modal/ModalDelet";
 
-// Componentes UI
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -63,12 +62,10 @@ export default function VisualizarMateria() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [expandirDescricao, setExpandirDescricao] = useState(false);
   const [expandirTarefas, setExpandirTarefas] = useState(true);
-  // Adicione estes estados junto com os outros estados no início do componente:
 
   const [expandirAtividades, setExpandirAtividades] = useState(false);
   const [expandirProvas, setExpandirProvas] = useState(false);
 
-  // Buscar dados da matéria
   useEffect(() => {
     const fetchMateria = async () => {
       if (!id) return;
@@ -89,7 +86,6 @@ export default function VisualizarMateria() {
     fetchMateria();
   }, [id]);
 
-  // Buscar tarefas relacionadas à matéria
   useEffect(() => {
     const fetchTarefas = async () => {
       if (!id) return;
@@ -98,7 +94,6 @@ export default function VisualizarMateria() {
         setIsLoadingTarefas(true);
         const data = await apiFetch<Materia>(`materias/${id}`);
 
-        // Verificar se a resposta contém um array de tarefas
         if (data && data.tarefas) {
           setTarefas(data.tarefas);
         } else {
@@ -129,7 +124,6 @@ export default function VisualizarMateria() {
     }
   };
 
-  // Formatação de data mais amigável
   const formatDateFriendly = (dateString: string) => {
     try {
       const date = new Date(dateString);
@@ -139,7 +133,6 @@ export default function VisualizarMateria() {
     }
   };
 
-  // Renderização do status da tarefa
   const renderStatusBadge = (status: Status) => {
     switch (status) {
       case Status.PENDENTE:
@@ -171,7 +164,6 @@ export default function VisualizarMateria() {
     }
   };
 
-  // Exibir estado de carregamento
   if (isLoading) {
     return (
       <div className="container mx-auto px-3 sm:px-5 py-4 sm:py-8 animate-in fade-in duration-300">
@@ -199,7 +191,6 @@ export default function VisualizarMateria() {
     );
   }
 
-  // Exibir mensagem de erro
   if (error || !materia) {
     return (
       <div className="container mx-auto px-3 sm:px-5 py-4 sm:py-8 animate-in fade-in duration-300">
@@ -223,7 +214,6 @@ export default function VisualizarMateria() {
 
   return (
     <div className="container mx-auto px-3 sm:px-5 py-4 sm:py-8 animate-in fade-in duration-300">
-      {/* Barra superior com navegação e ações */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
         <Link
           href="/admin/materias"
@@ -242,9 +232,7 @@ export default function VisualizarMateria() {
         </div>
       </div>
 
-      {/* Card principal da matéria */}
       <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-100">
-        {/* Cabeçalho com estilo personalizado usando a cor da matéria */}
         <div
           className="py-4 px-4 sm:px-6 border-b border-slate-100 flex flex-col gap-2"
           style={{
@@ -274,10 +262,7 @@ export default function VisualizarMateria() {
           </div>
         </div>
 
-        {/* Corpo principal - Informações da matéria */}
         <div className="p-4 sm:p-6">
-          {/* Grid de informações */}
-          {/* Descrição da matéria */}
           <div className="mb-6">
             <h2 className="text-sm font-medium text-slate-700 mb-2 flex items-center">
               <FiMessageSquare size={14} className="mr-1.5 text-slate-400" />
@@ -323,9 +308,7 @@ export default function VisualizarMateria() {
             </div>
           </div>
 
-          {/* Seções de Tarefas, Atividades e Provas */}
           <div className="space-y-5">
-            {/* Cabeçalho da seção */}
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-medium text-slate-700 flex items-center">
                 <FiFileText size={14} className="mr-1.5 text-slate-400" />
@@ -333,7 +316,6 @@ export default function VisualizarMateria() {
               </h2>
             </div>
 
-            {/* === Seção de Tarefas === */}
             <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
               <div
                 className="flex items-center justify-between p-3 cursor-pointer border-b border-slate-100 hover:bg-slate-50 transition-colors"
@@ -431,7 +413,6 @@ export default function VisualizarMateria() {
               )}
             </div>
 
-            {/* === Seção de Atividades === */}
             <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
               <div
                 className="flex items-center justify-between p-3 cursor-pointer border-b border-slate-100 hover:bg-slate-50 transition-colors"
@@ -509,7 +490,6 @@ export default function VisualizarMateria() {
               )}
             </div>
 
-            {/* === Seção de Provas === */}
             <div className="bg-white rounded-lg border border-slate-200 overflow-hidden">
               <div
                 className="flex items-center justify-between p-3 cursor-pointer border-b border-slate-100 hover:bg-slate-50 transition-colors"
@@ -589,7 +569,6 @@ export default function VisualizarMateria() {
           </div>
         </div>
       </div>
-      {/* Modal de confirmação de exclusão */}
       <ModalDelete
         isOpen={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
@@ -612,22 +591,3 @@ export default function VisualizarMateria() {
     </div>
   );
 }
-
-// Componente que faltava na importação
-const FiPlus = ({ size = 24, className = "" }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={`feather feather-plus ${className}`}
-  >
-    <line x1="12" y1="5" x2="12" y2="19"></line>
-    <line x1="5" y1="12" x2="19" y2="12"></line>
-  </svg>
-);

@@ -8,6 +8,7 @@ import Link from "next/link";
 
 import { Tarefa } from "@/core/types/tarefas";
 import { ModalDelete } from "@/core/components/Modal/ModalDelet";
+import HeaderCard from "@/core/components/Cads/HeaderCard";
 
 interface Materia {
   tarefas: Tarefa[];
@@ -91,16 +92,15 @@ export default function Materias() {
   };
 
   return (
-    <div className="container mx-auto px-3 sm:px-5 py-4 sm:py-8 animate-in fade-in duration-500">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
-        <h1 className="text-xl sm:text-2xl font-bold text-slate-800">Minhas Matérias</h1>
-        <Link
-          href="/admin/materias/newMateria"
-          className="flex items-center justify-center bg-sky-500 hover:bg-sky-600 text-white px-4 py-2 rounded-lg transition shadow-md gap-2 text-sm font-medium"
-        >
-          <FiPlus size={16} /> Nova Matéria
-        </Link>
-      </div>
+    <div className="container mx-auto px-4 py-6 animate-in fade-in duration-300">
+      <HeaderCard
+        title="Gerenciamento de Matérias"
+        description="Cadastre e organize suas matérias"
+        buttonLabel="Nova Matéria"
+        buttonHref="/admin/materias/newMateria"
+        buttonColor="sky"
+        canCreate={true}
+      />
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-3 sm:p-4 mb-6">
         <div className="relative">

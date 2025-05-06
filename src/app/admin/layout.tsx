@@ -39,8 +39,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return () => window.removeEventListener("storage", handleStorageChange);
   }, [router]);
 
-  // Largura do sidebar
-  const sidebarWidth = collapsed ? 64 : 240; // px
+  const sidebarWidth = collapsed ? 64 : 240;
 
   if (isAuthenticated === null) {
     return (

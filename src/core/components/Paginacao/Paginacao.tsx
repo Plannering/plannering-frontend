@@ -30,9 +30,7 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
             const isCurrentPage = page === currentPage;
             const isNearCurrentPage = page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1;
 
-            // Mostrar apenas páginas próximas à atual e primeira/última
             if (!isNearCurrentPage) {
-              // Mostrar reticências apenas uma vez entre intervalos
               if (page === 2 || page === totalPages - 1) {
                 return (
                   <span key={`ellipsis-${page}`} className="px-2 text-slate-400">

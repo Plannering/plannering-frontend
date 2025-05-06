@@ -45,7 +45,6 @@ const registerSchema = yup.object({
 
 type RegisterFormData = yup.InferType<typeof registerSchema>;
 
-// Variantes para animações
 const containerVariants = {
   hidden: { opacity: 0 },
   show: {
@@ -104,7 +103,7 @@ export default function Register() {
   const [apiError, setApiError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [formStep, setFormStep] = useState(0); // Para formulário em etapas em dispositivos móveis
+  const [formStep, setFormStep] = useState(0);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -243,7 +242,6 @@ export default function Register() {
 
   return (
     <div className="min-h-screen w-full flex flex-col md:flex-row">
-      {/* Lado esquerdo - Informações e branding */}
       <div className="hidden md:flex md:w-1/3 bg-gradient-to-br from-sky-600 to-sky-900 text-white p-8 lg:p-16 flex-col justify-between relative overflow-hidden">
         <div className="absolute inset-0 z-0 opacity-20">
           <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] bg-repeat"></div>
@@ -293,7 +291,6 @@ export default function Register() {
         </motion.div>
       </div>
 
-      {/* Lado direito - Formulário */}
       <div className="flex-1 flex w-full pattern-point items-center justify-center p-6 md:p-12 bg-gray-50">
         <div className="w-full max-w-md">
           <AnimatePresence mode="wait">
@@ -326,7 +323,6 @@ export default function Register() {
               </motion.div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Versão para dispositivos móveis com steps */}
                 <AnimatePresence mode="wait" initial={false}>
                   {formStep === 0 ? (
                     <motion.div key="step1" {...pageTransition} className="space-y-4 md:hidden">
@@ -528,7 +524,6 @@ export default function Register() {
                   )}
                 </AnimatePresence>
 
-                {/* Versão para desktop - tudo em uma página */}
                 <motion.div
                   variants={containerVariants}
                   initial="hidden"
@@ -751,7 +746,6 @@ export default function Register() {
             </CardContent>
           </Card>
 
-          {/* Versão mobile da branding */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

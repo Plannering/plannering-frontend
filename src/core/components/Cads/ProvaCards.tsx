@@ -1,15 +1,6 @@
 import React, { useState } from "react";
 import Link from "next/link";
-import {
-  FiMoreVertical,
-  FiEye,
-  FiTrash2,
-  FiCheckCircle,
-  FiAlertCircle,
-  FiClock,
-  FiAward,
-  FiMapPin,
-} from "react-icons/fi";
+import { FiMoreVertical, FiEye, FiTrash2, FiCheckCircle, FiAlertCircle, FiClock, FiAward } from "react-icons/fi";
 import { Status } from "@/core/enum/status.enum";
 import { formatDate } from "../../utils/formatDate";
 import { StatusBadge } from "../Badge/BadgeStatus";
@@ -35,7 +26,6 @@ interface ProvaCardProps {
   updateLoading?: string | null;
 }
 
-// Enum para status de data
 enum DateStatus {
   PASSADO = "passado",
   ALERTA = "alerta",
@@ -47,7 +37,6 @@ export const ProvaCard: React.FC<ProvaCardProps> = ({
   titulo,
   descricao,
   data,
-  duracao,
   nota,
   local,
   status,
@@ -59,10 +48,8 @@ export const ProvaCard: React.FC<ProvaCardProps> = ({
   const [openOptionsMenu, setOpenOptionsMenu] = useState(false);
   const [isStatusModalOpen, setStatusModalOpen] = useState(false);
 
-  // Garantir que data seja string para funções/utilização
   const dataStr = typeof data === "string" ? data : data.toISOString();
 
-  // Função para verificar o status da data
   const getDateStatus = (dateStr: string, provaStatus: Status): { status: DateStatus; daysLeft?: number } => {
     if (provaStatus === Status.CONCLUIDO) return { status: DateStatus.NORMAL };
 
@@ -83,9 +70,7 @@ export const ProvaCard: React.FC<ProvaCardProps> = ({
   const dateInfo = getDateStatus(dataStr, status);
   const isConcluida = status === Status.CONCLUIDO;
 
-  // Função para criar uma cópia da prova com o status atualizado
   const handleCompleteProva = async (id: string) => {
-    // Criar um objeto completo da prova com todas as propriedades visíveis
     const provaCompleta: Prova = {
       id,
       titulo,
@@ -100,7 +85,6 @@ export const ProvaCard: React.FC<ProvaCardProps> = ({
       usuarioId: "",
     };
 
-    // Chamar a função de atualização passando o objeto completo
     await onStatusChange(provaCompleta);
   };
 
@@ -117,7 +101,6 @@ export const ProvaCard: React.FC<ProvaCardProps> = ({
     }
   }, [openOptionsMenu]);
 
-  // Função para retornar as cores baseadas no status da data
   const getDateColors = () => {
     switch (dateInfo.status) {
       case DateStatus.PASSADO:
@@ -162,14 +145,14 @@ export const ProvaCard: React.FC<ProvaCardProps> = ({
                   transition-all duration-150 hover:shadow-md 
                   ${isConcluida ? "opacity-75" : ""}`}
       style={{
-        borderLeft: `3px solid ${materia?.cor || "#9333ea"}`, // Usa a cor da matéria ou roxo padrão
+        borderLeft: `3px solid ${materia?.cor || "#3b82f6"}`,
       }}
     >
       {/* Card Header */}
       <div className="p-2.5 flex justify-between items-center">
         <Link
           href={`/admin/provas/${id}`}
-          className="font-medium text-sm text-gray-700 line-clamp-1 hover:text-purple-600 transition-colors"
+          className="font-medium text-sm text-gray-700 line-clamp-1 hover:text-sky-600 transition-colors"
         >
           {titulo}
         </Link>
@@ -210,7 +193,6 @@ export const ProvaCard: React.FC<ProvaCardProps> = ({
         </div>
       </div>
 
-      {/* Info Strip - matéria e indicadores de prova */}
       <div className="px-2.5 py-1.5 flex items-center justify-between text-xs">
         <div className="flex items-center gap-2">
           {materia ? (
@@ -228,34 +210,21 @@ export const ProvaCard: React.FC<ProvaCardProps> = ({
         </div>
       </div>
 
-      {/* Informações da prova */}
       <div className="px-2.5 py-1.5 flex justify-between gap-1.5 text-xs">
-        <div className="flex items-center gap-1 text-slate-600">
-          <FiClock size={12} className="text-purple-500" />
-          <span>{duracao} min</span>
-        </div>
         <div className="flex items-center gap-1 text-slate-600">
           <FiAward size={12} className="text-amber-500" />
           <span>Nota: {nota}</span>
         </div>
       </div>
 
-      {/* Descrição - opcional */}
       {descricao && (
         <div className="px-2.5 py-1 flex justify-between items-center">
           <p className="text-xs text-slate-500 line-clamp-1" title={descricao}>
             {descricao}
           </p>
-          <div className="flex text-xs items-center gap-1 text-slate-600">
-            <FiMapPin size={12} className="text-blue-500" />
-            <span className="truncate" title={local}>
-              Local: {local}
-            </span>
-          </div>
         </div>
       )}
 
-      {/* Footer com Status e Ações */}
       <div className="px-2.5 py-2 border-t border-slate-100 flex justify-between items-center">
         <StatusBadge status={status} />
 
@@ -264,7 +233,7 @@ export const ProvaCard: React.FC<ProvaCardProps> = ({
             <button
               onClick={() => setStatusModalOpen(true)}
               disabled={updateLoading === id}
-              className="flex items-center px-2 py-0.5 text-xs font-medium rounded-md bg-purple-100 text-purple-700 hover:bg-purple-200 transition-colors"
+              className="flex items-center px-2 py-0.5 text-xs font-medium rounded-md bg-green-100 text-green-700 hover:bg-green-200 transition-colors"
               title="Atualizar status"
             >
               {updateLoading === id ? (
@@ -272,13 +241,13 @@ export const ProvaCard: React.FC<ProvaCardProps> = ({
               ) : (
                 <FiCheckCircle className="mr-1" size={12} />
               )}
-              Realizada
+              Finalizar Prova
             </button>
           )}
 
           <Link
             href={`/admin/provas/${id}`}
-            className="text-slate-400 hover:text-purple-600 transition-colors p-1 rounded-full hover:bg-purple-50"
+            className="text-slate-400 hover:text-sky-600 transition-colors p-1 rounded-full hover:bg-sky-50"
             aria-label="Visualizar"
             title="Visualizar prova"
           >
@@ -287,7 +256,6 @@ export const ProvaCard: React.FC<ProvaCardProps> = ({
         </div>
       </div>
 
-      {/* Modal de atualização de status */}
       <ModalStatus
         isOpen={isStatusModalOpen}
         onClose={() => setStatusModalOpen(false)}

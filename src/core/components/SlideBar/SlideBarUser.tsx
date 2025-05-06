@@ -12,7 +12,6 @@ export default function SlideBarUser({ collapsed = false }: SlideBarUserProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  // Detectar cliques fora do menu para fechá-lo
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (
@@ -31,12 +30,10 @@ export default function SlideBarUser({ collapsed = false }: SlideBarUserProps) {
 
   const isMobile = typeof window !== "undefined" && window.innerWidth <= 768;
 
-  // Versão mobile - adaptada para corresponder à versão desktop
   if (isMobile) {
     return (
       <div className="w-full flex flex-col items-center py-6">
         <div className="relative w-full">
-          {/* Botão similar ao desktop */}
           <button
             ref={buttonRef}
             className="flex items-center justify-center gap-3 p-2 rounded-2xl bg-white w-[14rem] mx-auto shadow-md text-start hover:bg-sky-50 transition border border-slate-200"
@@ -57,7 +54,6 @@ export default function SlideBarUser({ collapsed = false }: SlideBarUserProps) {
             </div>
           </button>
 
-          {/* Menu dropdown (mesma estrutura do desktop) */}
           {menuOpen && (
             <div
               ref={menuRef}
@@ -98,7 +94,6 @@ export default function SlideBarUser({ collapsed = false }: SlideBarUserProps) {
     );
   }
 
-  // Desktop com menu dropdown (mantido igual ao seu código)
   return (
     <div className="relative">
       <button
@@ -125,7 +120,6 @@ export default function SlideBarUser({ collapsed = false }: SlideBarUserProps) {
         )}
       </button>
 
-      {/* Menu dropdown */}
       {menuOpen && (
         <div
           ref={menuRef}
@@ -165,23 +159,6 @@ export default function SlideBarUser({ collapsed = false }: SlideBarUserProps) {
           </button>
         </div>
       )}
-
-      {/* Animação para o menu */}
-      <style jsx global>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-fade-in {
-          animation: fadeIn 0.2s ease-out;
-        }
-      `}</style>
     </div>
   );
 }

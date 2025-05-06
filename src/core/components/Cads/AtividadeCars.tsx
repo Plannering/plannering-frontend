@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from "react";
 import Link from "next/link";
 import { FiMoreVertical, FiEye, FiTrash2, FiCheckCircle, FiAlertCircle, FiClock, FiStar } from "react-icons/fi";
@@ -26,7 +25,6 @@ interface AtividadeCardProps {
   updateLoading?: string | null;
 }
 
-// Enum para status de data
 enum DateStatus {
   VENCIDO = "vencido",
   ALERTA = "alerta",
@@ -49,10 +47,8 @@ export const AtividadeCard: React.FC<AtividadeCardProps> = ({
   const [openOptionsMenu, setOpenOptionsMenu] = useState(false);
   const [isStatusModalOpen, setStatusModalOpen] = useState(false);
 
-  // Garantir que dataVencimento seja string para funções/utilização
   const dataVencimentoStr = typeof dataVencimento === "string" ? dataVencimento : dataVencimento.toISOString();
 
-  // Função para verificar o status da data
   const getDateStatus = (dateStr: string, taskStatus: Status): { status: DateStatus; daysLeft?: number } => {
     if (taskStatus === Status.CONCLUIDO) return { status: DateStatus.NORMAL };
 
@@ -73,9 +69,7 @@ export const AtividadeCard: React.FC<AtividadeCardProps> = ({
   const dateInfo = getDateStatus(dataVencimentoStr, status);
   const isConcluida = status === Status.CONCLUIDO;
 
-  // Função para criar uma cópia da atividade com o status atualizado
   const handleCompleteAtividade = async (id: string) => {
-    // Criar um objeto completo da atividade com todas as propriedades visíveis
     const atividadeCompleta: Atividade = {
       id,
       titulo,
@@ -90,7 +84,6 @@ export const AtividadeCard: React.FC<AtividadeCardProps> = ({
       usuarioId: "",
     };
 
-    // Chamar a função de atualização passando o objeto completo
     await onStatusChange(atividadeCompleta);
   };
 
@@ -107,7 +100,6 @@ export const AtividadeCard: React.FC<AtividadeCardProps> = ({
     }
   }, [openOptionsMenu]);
 
-  // Função para retornar as cores baseadas no status da data
   const getDateColors = () => {
     switch (dateInfo.status) {
       case DateStatus.VENCIDO:
@@ -152,10 +144,9 @@ export const AtividadeCard: React.FC<AtividadeCardProps> = ({
                   transition-all duration-150 hover:shadow-md 
                   ${isConcluida ? "opacity-75" : ""}`}
       style={{
-        borderLeft: `3px solid ${materia?.cor || "#00a6f4"}`, // Sempre usa a cor da matéria
+        borderLeft: `3px solid ${materia?.cor || "#00a6f4"}`,
       }}
     >
-      {/* Card Header - mais compacto */}
       <div className="p-2.5 flex justify-between items-center">
         <Link
           href={`/admin/atividades/${id}`}
@@ -200,7 +191,6 @@ export const AtividadeCard: React.FC<AtividadeCardProps> = ({
         </div>
       </div>
 
-      {/* Info Strip - design simplificado */}
       <div className="px-2.5 py-1.5 flex items-center justify-between text-xs">
         <div className="flex items-center gap-2">
           {materia ? (
@@ -209,14 +199,11 @@ export const AtividadeCard: React.FC<AtividadeCardProps> = ({
             <span className="text-slate-400 italic text-xs">Sem matéria</span>
           )}
 
-          {/* Informação de Nota/Peso no lugar de Prioridade */}
-          {(peso !== undefined || nota !== undefined) && (
-            <div className="flex items-center gap-1 text-xs bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded-full">
-              <FiStar size={12} className="text-amber-500" />
-              {nota !== undefined && <span>{nota}</span>}
-              {peso !== undefined && nota !== undefined && <span>/</span>}
-              {peso !== undefined && <span>Peso: {peso}</span>}
-            </div>
+          {nota !== undefined && nota !== null && (
+            <span className="flex items-center gap-1 text-slate-500">
+              {nota === 0 ? null : <FiStar size={14} className="text-yellow-500" />}
+              <span>{nota === 0 ? "Sem pontos" : nota === 1 ? "1 ponto" : `${nota} pontos`}</span>
+            </span>
           )}
         </div>
 
@@ -228,7 +215,6 @@ export const AtividadeCard: React.FC<AtividadeCardProps> = ({
         </div>
       </div>
 
-      {/* Descrição - mais compacta */}
       {descricao && (
         <div className="px-2.5 py-1">
           <p className="text-xs text-slate-500 line-clamp-1" title={descricao}>
@@ -237,7 +223,6 @@ export const AtividadeCard: React.FC<AtividadeCardProps> = ({
         </div>
       )}
 
-      {/* Footer com Status e Ações - design simplificado */}
       <div className="px-2.5 py-2 border-t border-slate-100 flex justify-between items-center">
         <StatusBadge status={status} />
 
@@ -269,7 +254,6 @@ export const AtividadeCard: React.FC<AtividadeCardProps> = ({
         </div>
       </div>
 
-      {/* Modal de conclusão */}
       <ModalStatus
         isOpen={isStatusModalOpen}
         onClose={() => setStatusModalOpen(false)}

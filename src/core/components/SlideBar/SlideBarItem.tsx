@@ -48,7 +48,6 @@ export default function SlideBarItem({ title, icon, link, collapsed = false, onC
     </button>
   );
 
-  // Tooltip só quando colapsado
   if (collapsed) {
     return (
       <TooltipProvider>
