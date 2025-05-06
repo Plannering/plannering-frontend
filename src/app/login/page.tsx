@@ -20,12 +20,12 @@ import {
   ListTodo,
   BrainCircuit,
 } from "lucide-react";
-import { Card, CardContent } from "@/core/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/core/components/ui/form";
-import { Input } from "@/core/components/ui/input";
-import { Button } from "@/core/components/ui/button";
-import { Checkbox } from "@/core/components/ui/checkbox";
-import { Alert, AlertDescription } from "@/core/components/ui/alert";
+import { Card, CardContent } from "@/components/ui/card";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import apiFetch from "@/core/api/fetcher";
 import { LoginResponse } from "@/core/types/auth";
 import { cn } from "@/core/lib/utils";
