@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import Link from "next/link";
-import { FiMoreVertical, FiEye, FiTrash2, FiCheckCircle, FiAlertCircle, FiClock, FiStar } from "react-icons/fi";
+import { FiMoreVertical, FiEye, FiTrash2, FiEdit, FiStar } from "react-icons/fi";
 import { Status } from "@/core/enum/status.enum";
-import { formatDate } from "../../utils/formatDate";
 import { StatusBadge } from "../Badge/BadgeStatus";
 import { MateriaBadge } from "../Badge/BadgeMateria";
-import ModalStatus from "../Modal/ModalComplet";
+import { BadgeDate } from "../Badge/BadgeData";
+import ModalChangeStatus from "../Modal/ModalStatus";
 import { Atividade } from "@/core/types/atividades";
 
 interface AtividadeCardProps {
@@ -21,14 +21,8 @@ interface AtividadeCardProps {
     cor: string;
   };
   onDelete: (id: string) => void;
-  onStatusChange: (atividade: Atividade) => Promise<void>;
+  onStatusChange: (atividade: Atividade, novoStatus: Status) => Promise<void>;
   updateLoading?: string | null;
-}
-
-enum DateStatus {
-  VENCIDO = "vencido",
-  ALERTA = "alerta",
-  NORMAL = "normal",
 }
 
 export const AtividadeCard: React.FC<AtividadeCardProps> = ({
@@ -49,27 +43,7 @@ export const AtividadeCard: React.FC<AtividadeCardProps> = ({
 
   const dataVencimentoStr = typeof dataVencimento === "string" ? dataVencimento : dataVencimento.toISOString();
 
-  const getDateStatus = (dateStr: string, taskStatus: Status): { status: DateStatus; daysLeft?: number } => {
-    if (taskStatus === Status.CONCLUIDO) return { status: DateStatus.NORMAL };
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const targetDate = new Date(dateStr);
-    targetDate.setHours(0, 0, 0, 0);
-
-    const diffTime = targetDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays < 0) return { status: DateStatus.VENCIDO, daysLeft: diffDays };
-    if (diffDays <= 7) return { status: DateStatus.ALERTA, daysLeft: diffDays };
-    return { status: DateStatus.NORMAL, daysLeft: diffDays };
-  };
-
-  const dateInfo = getDateStatus(dataVencimentoStr, status);
-  const isConcluida = status === Status.CONCLUIDO;
-
-  const handleCompleteAtividade = async (id: string) => {
+  const handleStatusChange = async (id: string, novoStatus: Status) => {
     const atividadeCompleta: Atividade = {
       id,
       titulo,
@@ -77,14 +51,14 @@ export const AtividadeCard: React.FC<AtividadeCardProps> = ({
       dataVencimento: new Date(dataVencimentoStr),
       peso,
       nota,
-      status: status,
+      status: novoStatus,
       materiaId: materia?.nome,
       dataCriacao: "",
       dataAtualizacao: "",
       usuarioId: "",
     };
 
-    await onStatusChange(atividadeCompleta);
+    await onStatusChange(atividadeCompleta, novoStatus);
   };
 
   const handleCloseOptionsMenu = () => {
@@ -100,49 +74,11 @@ export const AtividadeCard: React.FC<AtividadeCardProps> = ({
     }
   }, [openOptionsMenu]);
 
-  const getDateColors = () => {
-    switch (dateInfo.status) {
-      case DateStatus.VENCIDO:
-        return {
-          textColor: "text-red-600",
-          bgColor: "bg-red-50",
-          icon: <FiAlertCircle size={14} className="text-red-500" />,
-        };
-      case DateStatus.ALERTA:
-        return {
-          textColor: "text-amber-600",
-          bgColor: "bg-amber-50",
-          icon: <FiClock size={14} className="text-amber-500" />,
-        };
-      default:
-        return { textColor: "text-slate-600", bgColor: "", icon: null };
-    }
-  };
-
-  const getDateText = () => {
-    if (dateInfo.status === DateStatus.VENCIDO) {
-      const days = Math.abs(dateInfo.daysLeft || 0);
-      if (days === 0) return "Venceu hoje";
-      if (days === 1) return "Venceu ontem";
-      return `Vencida há ${days} dias`;
-    }
-
-    if (dateInfo.status === DateStatus.ALERTA) {
-      if (dateInfo.daysLeft === 0) return "Vence hoje";
-      if (dateInfo.daysLeft === 1) return "Vence amanhã";
-      return `Vence em ${dateInfo.daysLeft} dias`;
-    }
-
-    return formatDate(dataVencimentoStr);
-  };
-
-  const dateColors = getDateColors();
-
   return (
     <div
       className={`bg-white rounded-lg shadow-sm border border-slate-100 overflow-hidden 
                   transition-all duration-150 hover:shadow-md 
-                  ${isConcluida ? "opacity-75" : ""}`}
+                  ${status === Status.CONCLUIDO ? "opacity-75" : ""}`}
       style={{
         borderLeft: `3px solid ${materia?.cor || "#00a6f4"}`,
       }}
@@ -180,6 +116,17 @@ export const AtividadeCard: React.FC<AtividadeCardProps> = ({
                 onClick={(e) => {
                   e.stopPropagation();
                   setOpenOptionsMenu(false);
+                  setStatusModalOpen(true);
+                }}
+                className="w-full text-left px-3 py-1.5 text-xs hover:bg-slate-50 flex items-center text-sky-600"
+              >
+                <FiEdit className="mr-2" size={12} /> Alterar Status
+              </button>
+
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setOpenOptionsMenu(false);
                   onDelete(id);
                 }}
                 className="w-full text-left px-3 py-1.5 text-xs hover:bg-slate-50 flex items-center text-red-600"
@@ -207,12 +154,7 @@ export const AtividadeCard: React.FC<AtividadeCardProps> = ({
           )}
         </div>
 
-        <div
-          className={`flex items-center gap-1 ${dateColors.textColor} ${dateColors.bgColor} px-1.5 py-0.5 rounded-full`}
-        >
-          {dateColors.icon}
-          <span className="text-xs font-medium">{getDateText()}</span>
-        </div>
+        <BadgeDate date={dataVencimentoStr} status={status} />
       </div>
 
       {descricao && (
@@ -227,21 +169,19 @@ export const AtividadeCard: React.FC<AtividadeCardProps> = ({
         <StatusBadge status={status} />
 
         <div className="flex items-center gap-1.5">
-          {!isConcluida && (
-            <button
-              onClick={() => setStatusModalOpen(true)}
-              disabled={updateLoading === id}
-              className="flex items-center px-2 py-0.5 text-xs font-medium rounded-md bg-green-100 text-green-700 hover:bg-green-200 transition-colors"
-              title="Marcar como concluída"
-            >
-              {updateLoading === id ? (
-                <div className="h-3 w-3 border-2 border-current border-t-transparent rounded-full animate-spin mr-1"></div>
-              ) : (
-                <FiCheckCircle className="mr-1" size={12} />
-              )}
-              Concluir
-            </button>
-          )}
+          <button
+            onClick={() => setStatusModalOpen(true)}
+            disabled={updateLoading === id}
+            className="flex items-center px-2 py-0.5 text-xs font-medium rounded-md bg-sky-100 text-sky-700 hover:bg-sky-200 transition-colors"
+            title="Alterar status"
+          >
+            {updateLoading === id ? (
+              <div className="h-3 w-3 border-2 border-current border-t-transparent rounded-full animate-spin mr-1"></div>
+            ) : (
+              <FiEdit className="mr-1" size={12} />
+            )}
+            Alterar status
+          </button>
 
           <Link
             href={`/admin/atividades/${id}`}
@@ -254,12 +194,13 @@ export const AtividadeCard: React.FC<AtividadeCardProps> = ({
         </div>
       </div>
 
-      <ModalStatus
+      <ModalChangeStatus
         isOpen={isStatusModalOpen}
         onClose={() => setStatusModalOpen(false)}
-        onConfirm={handleCompleteAtividade}
+        onConfirm={handleStatusChange}
         id={id}
         itemName={titulo}
+        statusAtual={status}
         isUpdating={updateLoading === id}
         error={null}
       />

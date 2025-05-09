@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import Link from "next/link";
-import { FiMoreVertical, FiEye, FiTrash2, FiCheckCircle, FiAlertCircle, FiClock, FiAward } from "react-icons/fi";
+import { FiMoreVertical, FiEye, FiTrash2, FiStar, FiEdit } from "react-icons/fi";
 import { Status } from "@/core/enum/status.enum";
-import { formatDate } from "../../utils/formatDate";
 import { StatusBadge } from "../Badge/BadgeStatus";
 import { MateriaBadge } from "../Badge/BadgeMateria";
-import ModalStatus from "../Modal/ModalComplet";
+import { BadgeDate } from "../Badge/BadgeData";
+import ModalStatus from "../Modal/ModalStatus";
 import { Prova } from "@/core/types/provas";
 
 interface ProvaCardProps {
@@ -26,12 +26,6 @@ interface ProvaCardProps {
   updateLoading?: string | null;
 }
 
-enum DateStatus {
-  PASSADO = "passado",
-  ALERTA = "alerta",
-  NORMAL = "normal",
-}
-
 export const ProvaCard: React.FC<ProvaCardProps> = ({
   id,
   titulo,
@@ -49,28 +43,9 @@ export const ProvaCard: React.FC<ProvaCardProps> = ({
   const [isStatusModalOpen, setStatusModalOpen] = useState(false);
 
   const dataStr = typeof data === "string" ? data : data.toISOString();
-
-  const getDateStatus = (dateStr: string, provaStatus: Status): { status: DateStatus; daysLeft?: number } => {
-    if (provaStatus === Status.CONCLUIDO) return { status: DateStatus.NORMAL };
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const targetDate = new Date(dateStr);
-    targetDate.setHours(0, 0, 0, 0);
-
-    const diffTime = targetDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays < 0) return { status: DateStatus.PASSADO, daysLeft: diffDays };
-    if (diffDays <= 7) return { status: DateStatus.ALERTA, daysLeft: diffDays };
-    return { status: DateStatus.NORMAL, daysLeft: diffDays };
-  };
-
-  const dateInfo = getDateStatus(dataStr, status);
   const isConcluida = status === Status.CONCLUIDO;
 
-  const handleCompleteProva = async (id: string) => {
+  const handleCompleteProva = async (id: string, novoStatus: Status) => {
     const provaCompleta: Prova = {
       id,
       titulo,
@@ -78,7 +53,7 @@ export const ProvaCard: React.FC<ProvaCardProps> = ({
       data: dataStr,
       nota,
       local,
-      status: status,
+      status: novoStatus,
       materiaId: materia?.nome,
       dataCriacao: "",
       dataAtualizacao: "",
@@ -100,44 +75,6 @@ export const ProvaCard: React.FC<ProvaCardProps> = ({
       };
     }
   }, [openOptionsMenu]);
-
-  const getDateColors = () => {
-    switch (dateInfo.status) {
-      case DateStatus.PASSADO:
-        return {
-          textColor: "text-slate-600",
-          bgColor: "bg-slate-50",
-          icon: <FiAlertCircle size={14} className="text-slate-500" />,
-        };
-      case DateStatus.ALERTA:
-        return {
-          textColor: "text-amber-600",
-          bgColor: "bg-amber-50",
-          icon: <FiClock size={14} className="text-amber-500" />,
-        };
-      default:
-        return { textColor: "text-slate-600", bgColor: "", icon: null };
-    }
-  };
-
-  const getDateText = () => {
-    if (dateInfo.status === DateStatus.PASSADO) {
-      const days = Math.abs(dateInfo.daysLeft || 0);
-      if (days === 0) return "Foi hoje";
-      if (days === 1) return "Foi ontem";
-      return `Há ${days} dias`;
-    }
-
-    if (dateInfo.status === DateStatus.ALERTA) {
-      if (dateInfo.daysLeft === 0) return "Hoje";
-      if (dateInfo.daysLeft === 1) return "Amanhã";
-      return `Em ${dateInfo.daysLeft} dias`;
-    }
-
-    return formatDate(dataStr);
-  };
-
-  const dateColors = getDateColors();
 
   return (
     <div
@@ -194,27 +131,24 @@ export const ProvaCard: React.FC<ProvaCardProps> = ({
       </div>
 
       <div className="px-2.5 py-1.5 flex items-center justify-between text-xs">
-        <div className="flex items-center gap-2">
-          {materia ? (
-            <MateriaBadge nome={materia.nome} cor={materia.cor} />
-          ) : (
-            <span className="text-slate-400 italic text-xs">Sem matéria</span>
-          )}
+        <div className="flex items-center">
+          <div className="flex items-center gap-2">
+            {materia ? (
+              <MateriaBadge nome={materia.nome} cor={materia.cor} />
+            ) : (
+              <span className="text-slate-400 italic text-xs">Sem matéria</span>
+            )}
+
+            {nota !== undefined && nota !== null && (
+              <span className="flex items-center gap-1 text-slate-500">
+                {nota === 0 ? null : <FiStar size={14} className="text-yellow-500" />}
+                <span>{nota === 0 ? "Sem pontos" : nota === 1 ? "1 ponto" : `${nota} pontos`}</span>
+              </span>
+            )}
+          </div>
         </div>
 
-        <div
-          className={`flex items-center gap-1 ${dateColors.textColor} ${dateColors.bgColor} px-1.5 py-0.5 rounded-full`}
-        >
-          {dateColors.icon}
-          <span className="text-xs font-medium">{getDateText()}</span>
-        </div>
-      </div>
-
-      <div className="px-2.5 py-1.5 flex justify-between gap-1.5 text-xs">
-        <div className="flex items-center gap-1 text-slate-600">
-          <FiAward size={12} className="text-amber-500" />
-          <span>Nota: {nota}</span>
-        </div>
+        <BadgeDate date={dataStr} status={status} />
       </div>
 
       {descricao && (
@@ -233,15 +167,15 @@ export const ProvaCard: React.FC<ProvaCardProps> = ({
             <button
               onClick={() => setStatusModalOpen(true)}
               disabled={updateLoading === id}
-              className="flex items-center px-2 py-0.5 text-xs font-medium rounded-md bg-green-100 text-green-700 hover:bg-green-200 transition-colors"
+              className="flex items-center px-2 py-0.5 text-xs font-medium rounded-md bg-sky-100 text-sky-700 hover:bg-sky-200 transition-colors"
               title="Atualizar status"
             >
               {updateLoading === id ? (
                 <div className="h-3 w-3 border-2 border-current border-t-transparent rounded-full animate-spin mr-1"></div>
               ) : (
-                <FiCheckCircle className="mr-1" size={12} />
+                <FiEdit className="mr-1" size={12} />
               )}
-              Finalizar Prova
+              Alterar status
             </button>
           )}
 
@@ -264,6 +198,7 @@ export const ProvaCard: React.FC<ProvaCardProps> = ({
         itemName={titulo}
         isUpdating={updateLoading === id}
         error={null}
+        statusAtual={Status.PENDENTE}
       />
     </div>
   );

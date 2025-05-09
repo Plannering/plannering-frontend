@@ -5,34 +5,14 @@ import Link from "next/link";
 import { FiPlus, FiAlertCircle, FiX, FiArrowUp, FiHelpCircle } from "react-icons/fi";
 
 import apiFetch from "@/core/api/fetcher";
-import { Status } from "@/core/enum/status.enum";
 import { AtividadeCard } from "@/core/components/Cads/AtividadeCars";
 import { FilterBar } from "@/core/components/Paginacao/FiltroBar";
 import { Pagination } from "@/core/components/Paginacao/Paginacao";
-import { buscarAtividadebyId } from "@/core/api/atividades";
 import { Materia } from "@/core/types/materias";
 import HeaderCard from "@/core/components/Cads/HeaderCard";
-import {
-  filtrarAtividades,
-  hasActiveFilters,
-  getPaginatedItems,
-  calculateTotalPages,
-} from "@/core/utils/Filters/AtividadeFilter";
-
-type Atividade = {
-  id: string;
-  titulo: string;
-  descricao?: string;
-  dataVencimento?: string | Date;
-  peso?: number;
-  nota?: number;
-  status: Status;
-  dataCriacao: string;
-  dataAtualizacao: string;
-  usuarioId: string;
-  materiaId?: string;
-  materia?: Materia;
-};
+import { filtrarAtividades, hasActiveFiltersAtividade } from "@/core/utils/Filters/AtividadeFilter";
+import { Atividade } from "@/core/types/atividades";
+import { calculateTotalPages, getPaginatedItems } from "@/core/utils/paginatedItems";
 
 export default function Atividades() {
   const [atividades, setAtividades] = useState<Atividade[]>([]);
@@ -41,7 +21,7 @@ export default function Atividades() {
   const [error, setError] = useState<string | null>(null);
   const [updateLoading, setUpdateLoading] = useState<string | null>(null);
 
-  const [filtro, setFiltro] = useState<string>("pendentes");
+  const [filtro, setFiltro] = useState<string>("todas");
   const [filtroMateria, setFiltroMateria] = useState<string>("");
   const [filtroPrioridade, setFiltroPrioridade] = useState<string>("");
   const [filtroData, setFiltroData] = useState<string>("");
@@ -78,16 +58,7 @@ export default function Atividades() {
     setCurrentPage(1);
   }, [filtro, filtroMateria, filtroData, searchTerm]);
 
-  const atividadesNormalizadas = atividades.map((atividade) => ({
-    ...atividade,
-    materia: atividade.materia
-      ? {
-          ...atividade.materia,
-          cor: atividade.materia.cor || "#808080",
-        }
-      : undefined,
-  }));
-  const atividadesFiltradas = filtrarAtividades(atividadesNormalizadas, filtro, filtroMateria, filtroData, searchTerm);
+  const atividadesFiltradas = filtrarAtividades(atividades, filtro, filtroMateria, filtroData, searchTerm);
 
   const totalPages = calculateTotalPages(atividadesFiltradas.length, itemsPerPage);
   const currentItems = getPaginatedItems(atividadesFiltradas, currentPage, itemsPerPage);
@@ -99,41 +70,23 @@ export default function Atividades() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleStatusChange = async (atividadeCompleta: Atividade) => {
-    setUpdateLoading(atividadeCompleta.id);
+  const handleStatusChange = async (alterarStatus: Atividade) => {
+    setUpdateLoading(alterarStatus.id);
 
     try {
-      const atividadeAtual = await buscarAtividadebyId(atividadeCompleta.id);
-      const atividadeAtualizada = {
-        ...atividadeAtual,
-        status: Status.CONCLUIDO,
-        titulo: atividadeAtual.titulo ?? "",
-        descricao: atividadeAtual.descricao ?? "",
-        dataVencimento: atividadeAtual.dataVencimento,
-        peso: atividadeAtual.peso ?? 0,
-        nota: atividadeAtual.nota ?? 0,
-        materiaId: atividadeAtual.materiaId || (atividadeAtual.materiaId ?? ""),
-        usuarioId: atividadeAtual.usuarioId || "",
-      };
-
-      await apiFetch(`atividades/${atividadeAtual.id}`, {
+      await apiFetch(`atividades/${alterarStatus.id}`, {
         method: "PATCH",
-        body: JSON.stringify(atividadeAtualizada),
+        body: JSON.stringify({ status: alterarStatus.status }),
       });
 
       setAtividades((atividadesAnteriores) =>
         atividadesAnteriores.map((atividade) =>
-          atividade.id === atividadeCompleta.id
-            ? {
-                ...atividade,
-                status: Status.CONCLUIDO,
-              }
-            : atividade,
+          atividade.id === alterarStatus.id ? { ...atividade, status: alterarStatus.status } : atividade,
         ),
       );
     } catch (erro) {
       console.error("Erro ao atualizar status:", erro);
-      alert("Não foi possível concluir a atividade. Por favor, tente novamente.");
+      alert("Não foi possível atualizar o status da tarefa. Por favor, tente novamente.");
     } finally {
       setUpdateLoading(null);
     }
@@ -162,7 +115,7 @@ export default function Atividades() {
     setSearchTerm("");
   };
 
-  const filtrosAtivos = hasActiveFilters(filtro, filtroMateria, filtroData, searchTerm);
+  const filtrosAtivos = hasActiveFiltersAtividade(filtro, filtroMateria, filtroData, searchTerm);
 
   const totalItems = atividadesFiltradas.length;
   const startItem = totalItems > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
@@ -177,7 +130,7 @@ export default function Atividades() {
         buttonLabel="Nova Atividade"
         description="Cadastre e organize suas atividades."
         buttonHref="/admin/atividades/newAtividade"
-        buttonColor="sky"
+        buttonColor="emerald"
         canCreate={materias.length > 0}
         alertMessage="Você precisa cadastrar uma matéria antes de criar atividades."
       />
@@ -203,10 +156,10 @@ export default function Atividades() {
         searchPlaceholder="Buscar atividades..."
         statusOptions={[
           { value: "todas", label: "Todas as atividades" },
-          { value: "pendentes", label: "Pendentes", color: "amber" },
-          { value: "em_andamento", label: "Em andamento", color: "sky" },
-          { value: "concluidas", label: "Concluídas", color: "green" },
-          { value: "canceladas", label: "Canceladas", color: "red" },
+          { value: "pendentes", label: "Pendentes" },
+          { value: "em_andamento", label: "Em andamento" },
+          { value: "concluidas", label: "Concluídas" },
+          { value: "canceladas", label: "Canceladas" },
         ]}
         statusLabel="Status da atividade"
         materyLabel="Matéria"
@@ -221,7 +174,7 @@ export default function Atividades() {
           </div>
 
           {filtrosAtivos && (
-            <div className="bg-sky-50 text-sky-700 px-3 py-1 rounded-full text-xs">
+            <div className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs">
               {totalItems} resultado{totalItems !== 1 ? "s" : ""} encontrado{totalItems !== 1 ? "s" : ""}
             </div>
           )}
@@ -264,7 +217,7 @@ export default function Atividades() {
             {filtrosAtivos ? (
               <button
                 onClick={clearFilters}
-                className="inline-flex items-center px-4 py-2 bg-sky-50 text-sky-700 rounded-lg hover:bg-sky-100"
+                className="inline-flex items-center px-4 py-2 bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100"
               >
                 <FiX className="mr-2" /> Limpar filtros
               </button>

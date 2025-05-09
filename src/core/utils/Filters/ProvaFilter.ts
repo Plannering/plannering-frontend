@@ -1,133 +1,149 @@
-import { Status } from "@/core/enum/status.enum";
 import { Prova } from "@/core/types/provas";
+import { Status } from "@/core/enum/status.enum";
 
-/**
- * Filtra um array de provas com base nos critérios fornecidos
- * @param provas Lista de provas a serem filtradas
- * @param filtro Filtro de status (todas, pendentes, etc)
- * @param filtroMateria ID da matéria para filtrar
- * @param filtroData Filtro de data (hoje, esta_semana, etc)
- * @param searchTerm Termo de busca para título e descrição
- * @returns Array de provas filtradas e ordenadas
- */
-export const filtrarProvas = (
-  provas: Prova[],
-  filtro: string,
-  filtroMateria: string,
-  filtroData: string,
-  searchTerm: string,
-): Prova[] => {
-  return provas
-    .filter((prova) => {
-      if (filtro !== "concluidas" && prova.status === Status.CONCLUIDO) {
-        return false;
-      }
-
-      if (filtro === "todas") return true;
-      if (filtro === "pendentes") return prova.status === Status.PENDENTE;
-      if (filtro === "em_andamento") return prova.status === Status.EM_ANDAMENTO;
-      if (filtro === "concluidas") return prova.status === Status.CONCLUIDO;
-      if (filtro === "canceladas") return prova.status === Status.CANCELADO;
-
-      return true;
-    })
-    .filter((prova) => {
-      return filtroMateria === "" || (prova.materiaId && prova.materiaId === filtroMateria);
-    })
-    .filter((prova) => {
-      if (filtroData === "") return true;
-
-      const hoje = new Date();
-      hoje.setHours(0, 0, 0, 0);
-
-      if (!prova.data) {
-        return (
-          filtroData !== "atrasadas" &&
-          filtroData !== "hoje" &&
-          filtroData !== "esta_semana" &&
-          filtroData !== "proximos_7_dias"
-        );
-      }
-
-      const dataProva = new Date(prova.data);
-      dataProva.setHours(0, 0, 0, 0);
-
-      if (filtroData === "hoje") {
-        return dataProva.getTime() === hoje.getTime();
-      }
-
-      if (filtroData === "esta_semana") {
-        const diaSemana = hoje.getDay();
-        const inicioSemana = new Date(hoje);
-
-        inicioSemana.setDate(hoje.getDate() - (diaSemana === 0 ? 6 : diaSemana - 1));
-        const fimSemana = new Date(inicioSemana);
-        fimSemana.setDate(inicioSemana.getDate() + 6);
-        return dataProva >= inicioSemana && dataProva <= fimSemana;
-      }
-
-      if (filtroData === "atrasadas") {
-        return dataProva < hoje && prova.status !== Status.CONCLUIDO;
-      }
-
-      if (filtroData === "proximos_7_dias") {
-        const proximosSete = new Date(hoje);
-        proximosSete.setDate(hoje.getDate() + 7);
-        return dataProva >= hoje && dataProva <= proximosSete;
-      }
-
-      return true;
-    })
-    .filter((prova) => {
-      if (searchTerm === "") return true;
-
-      const termLowerCase = searchTerm.toLowerCase();
-      const tituloMatch = prova.titulo.toLowerCase().includes(termLowerCase);
-      const descricaoMatch = prova.descricao?.toLowerCase().includes(termLowerCase) ?? false;
-
-      return tituloMatch || descricaoMatch;
-    })
-    .sort((a, b) => {
-      const statusOrdem = {
-        [Status.PENDENTE]: 0,
-        [Status.EM_ANDAMENTO]: 1,
-        [Status.CONCLUIDO]: 2,
-        [Status.CANCELADO]: 3,
-      };
-
-      const statusValorA = statusOrdem[a.status] || 0;
-      const statusValorB = statusOrdem[b.status] || 0;
-
-      if (statusValorA !== statusValorB) {
-        return statusValorA - statusValorB;
-      }
-
-      if (a.data && b.data) {
-        return new Date(a.data).getTime() - new Date(b.data).getTime();
-      }
-
-      if (a.data) return -1;
-      if (b.data) return 1;
-
-      return 0;
-    });
+const estaNoIntervalo = (data: Date, inicioIntervalo: Date, fimIntervalo: Date): boolean => {
+  return data >= inicioIntervalo && data <= fimIntervalo;
 };
 
-export const hasActiveFilters = (
+const converterDataBrasileira = (dataString: string | null | undefined): Date | null => {
+  if (!dataString) return null;
+
+  const partes = dataString.split("/");
+  if (partes.length !== 3) return null;
+
+  const dia = parseInt(partes[0], 10);
+  const mes = parseInt(partes[1], 10) - 1;
+  const ano = parseInt(partes[2], 10);
+
+  return new Date(ano, mes, dia);
+};
+
+export const ordenarProvasPorData = (provas: Prova[]): Prova[] => {
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+
+  return [...provas].sort((a, b) => {
+    const dataA = converterDataBrasileira(a.data);
+    const dataB = converterDataBrasileira(b.data);
+
+    if (!dataA) return 1;
+    if (!dataB) return -1;
+
+    const aVencida = dataA < hoje;
+    const bVencida = dataB < hoje;
+
+    if (aVencida && !bVencida) return 1;
+    if (!aVencida && bVencida) return -1;
+
+    if (aVencida && bVencida) {
+      return dataB.getTime() - dataA.getTime();
+    }
+
+    return dataA.getTime() - dataB.getTime();
+  });
+};
+
+const aplicarFiltroData = (prova: Prova, filtroData: string): boolean => {
+  if (!filtroData || filtroData === "") return true;
+
+  if (!prova.data) return false;
+
+  const dataProva = converterDataBrasileira(prova.data);
+  if (!dataProva) return false;
+
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+
+  const amanha = new Date(hoje);
+  amanha.setDate(amanha.getDate() + 1);
+
+  const inicioSemana = new Date(hoje);
+  inicioSemana.setDate(hoje.getDate() - hoje.getDay());
+  const fimSemana = new Date(inicioSemana);
+  fimSemana.setDate(inicioSemana.getDate() + 6);
+
+  const em7Dias = new Date(hoje);
+  em7Dias.setDate(hoje.getDate() + 7);
+
+  switch (filtroData) {
+    case "hoje":
+      return dataProva.toDateString() === hoje.toDateString();
+
+    case "esta_semana":
+      return estaNoIntervalo(dataProva, inicioSemana, fimSemana);
+
+    case "atrasadas":
+      return dataProva < hoje && prova.status !== Status.CONCLUIDO && prova.status !== Status.CANCELADO;
+
+    case "proximos_7_dias":
+      return estaNoIntervalo(dataProva, hoje, em7Dias);
+
+    default:
+      return true;
+  }
+};
+
+export const filtrarProvas = (
+  provas: Prova[],
+  filtroStatus: string,
+  filtroMateria: string,
+  searchTerm: string,
+  filtroData: string,
+  mostrarConcluidas: boolean = false,
+): Prova[] => {
+  const provasFiltradas = provas.filter((prova) => {
+    if (
+      !mostrarConcluidas &&
+      filtroStatus !== "concluidas" &&
+      filtroStatus !== "canceladas" &&
+      (prova.status === Status.CONCLUIDO || prova.status === Status.CANCELADO)
+    ) {
+      return false;
+    }
+
+    if (filtroStatus !== "todas") {
+      let statusFiltro = "";
+      switch (filtroStatus) {
+        case "pendentes":
+          statusFiltro = Status.PENDENTE;
+          break;
+        case "em_andamento":
+          statusFiltro = Status.EM_ANDAMENTO;
+          break;
+        case "concluidas":
+          statusFiltro = Status.CONCLUIDO;
+          break;
+        case "canceladas":
+          statusFiltro = Status.CANCELADO;
+          break;
+      }
+
+      if (prova.status !== statusFiltro) return false;
+    }
+
+    if (filtroMateria && prova.materiaId !== filtroMateria) return false;
+
+    if (!aplicarFiltroData(prova, filtroData)) return false;
+
+    if (searchTerm) {
+      const termoBusca = searchTerm.toLowerCase();
+      const tituloMatch = prova.titulo?.toLowerCase().includes(termoBusca);
+      const descricaoMatch = prova.descricao?.toLowerCase().includes(termoBusca);
+
+      if (!tituloMatch && !descricaoMatch) return false;
+    }
+
+    return true;
+  });
+
+  return ordenarProvasPorData(provasFiltradas);
+};
+
+export const hasActiveFiltersProva = (
   filtro: string,
   filtroMateria: string,
   filtroData: string,
   searchTerm: string,
 ): boolean => {
   return filtro !== "todas" || filtroMateria !== "" || filtroData !== "" || searchTerm !== "";
-};
-
-export const getPaginatedItems = <T>(items: T[], currentPage: number, itemsPerPage: number): T[] => {
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  return items.slice(startIndex, endIndex);
-};
-
-export const calculateTotalPages = (totalItems: number, itemsPerPage: number): number => {
-  return Math.ceil(totalItems / itemsPerPage);
 };

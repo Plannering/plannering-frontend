@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -6,37 +7,17 @@ import SlideBar from "@/core/components/SlideBar/SlideBar";
 import { Loader2 } from "lucide-react";
 import { BrowserRouter } from "react-router";
 import { FiMenu } from "react-icons/fi";
+import { useAuth } from "@/core/services/auth";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const { isAuthenticated, setupAuth } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
-    const checkAuth = () => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        setIsAuthenticated(false);
-        router.push("/login?redirected=admin");
-        return;
-      }
-      try {
-        setIsAuthenticated(true);
-      } catch (error) {
-        console.error("Erro ao verificar autenticação:", error);
-        setIsAuthenticated(false);
-        router.push("/login?redirected=admin");
-      }
-    };
-    checkAuth();
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "token" && !e.newValue) {
-        router.push("/login?redirected=admin");
-      }
-    };
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+    const cleanup = setupAuth();
+    return cleanup;
   }, [router]);
 
   const sidebarWidth = collapsed ? 64 : 240;

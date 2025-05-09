@@ -8,7 +8,7 @@ interface HeaderCardProps {
   buttonLabel?: string;
   buttonHref?: string;
   buttonIcon?: React.ReactNode;
-  buttonColor?: "sky" | "purple" | "green" | "amber";
+  buttonColor?: "sky" | "indigo" | "rose" | "emerald";
   canCreate?: boolean;
   alertMessage?: string;
   alertActionLabel?: string;
@@ -31,9 +31,9 @@ export default function HeaderCard({
 }: HeaderCardProps) {
   const buttonColorClasses = {
     sky: "bg-sky-500 hover:bg-sky-600",
-    purple: "bg-purple-500 hover:bg-purple-600",
-    green: "bg-green-500 hover:bg-green-600",
-    amber: "bg-amber-500 hover:bg-amber-600",
+    indigo: "bg-indigo-500 hover:bg-indigo-600",
+    rose: "bg-rose-500 hover:bg-rose-600",
+    emerald: "bg-emerald-500 hover:bg-emerald-600",
   };
 
   const renderButton = () => {

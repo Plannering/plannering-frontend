@@ -5,19 +5,13 @@ import Link from "next/link";
 import { FiPlus, FiAlertCircle, FiX, FiArrowUp, FiHelpCircle } from "react-icons/fi";
 
 import apiFetch from "@/core/api/fetcher";
-import { Status } from "@/core/enum/status.enum";
 import { TarefaCard } from "@/core/components/Cads/TarefaCard";
 import { FilterBar } from "@/core/components/Paginacao/FiltroBar";
 import { Pagination } from "@/core/components/Paginacao/Paginacao";
-import { buscarTarefabyId } from "@/core/api/tarefas";
 import { Tarefa } from "@/core/types/tarefas";
 import HeaderCard from "@/core/components/Cads/HeaderCard";
-import {
-  filtrarTarefas,
-  hasActiveFilters,
-  getPaginatedItems,
-  calculateTotalPages,
-} from "@/core/utils/Filters/TarefaFilter";
+import { filtrarTarefas, hasActiveFiltersTarefa } from "@/core/utils/Filters/TarefaFilter";
+import { calculateTotalPages, getPaginatedItems } from "@/core/utils/paginatedItems";
 
 interface Materia {
   id: string;
@@ -32,7 +26,7 @@ export default function Tarefas() {
   const [error, setError] = useState<string | null>(null);
   const [updateLoading, setUpdateLoading] = useState<string | null>(null);
 
-  const [filtro, setFiltro] = useState<string>("pendentes");
+  const [filtro, setFiltro] = useState<string>("todas");
   const [filtroMateria, setFiltroMateria] = useState<string>("");
   const [filtroPrioridade, setFiltroPrioridade] = useState<string>("");
   const [filtroData, setFiltroData] = useState<string>("");
@@ -55,7 +49,7 @@ export default function Tarefas() {
         setMaterias(materiasData);
         setError(null);
       } catch (err) {
-        console.error("Erro ao buscar dados:", err);
+        console.error("", err);
         setError("Não foi possível carregar as tarefas. Por favor, tente novamente.");
       } finally {
         setIsLoading(false);
@@ -81,40 +75,23 @@ export default function Tarefas() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleStatusChange = async (tarefaCompleta: Tarefa) => {
-    setUpdateLoading(tarefaCompleta.id);
+  const handleStatusChange = async (alterarStatus: Tarefa) => {
+    setUpdateLoading(alterarStatus.id);
 
     try {
-      const tarefaAtual = await buscarTarefabyId(tarefaCompleta.id);
-      const tarefaAtualizada = {
-        ...tarefaAtual,
-        status: Status.CONCLUIDO,
-        titulo: tarefaAtual.titulo ?? "",
-        descricao: tarefaAtual.descricao ?? "",
-        prioridade: tarefaAtual.prioridade ?? "",
-        dataVencimento: tarefaAtual.dataVencimento,
-        materiaId: tarefaAtual.materiaId || (tarefaAtual.materiaId ?? ""),
-        usuarioId: tarefaAtual.usuarioId || "",
-      };
-
-      await apiFetch(`tarefas/${tarefaAtual.id}`, {
+      await apiFetch(`tarefas/${alterarStatus.id}`, {
         method: "PATCH",
-        body: JSON.stringify(tarefaAtualizada),
+        body: JSON.stringify({ status: alterarStatus.status }),
       });
 
       setTarefas((tarefasAnteriores) =>
         tarefasAnteriores.map((tarefa) =>
-          tarefa.id === tarefaCompleta.id
-            ? {
-                ...tarefa,
-                status: Status.CONCLUIDO,
-              }
-            : tarefa,
+          tarefa.id === alterarStatus.id ? { ...tarefa, status: alterarStatus.status } : tarefa,
         ),
       );
     } catch (erro) {
       console.error("Erro ao atualizar status:", erro);
-      alert("Não foi possível concluir a tarefa. Por favor, tente novamente.");
+      alert("Não foi possível atualizar o status da tarefa. Por favor, tente novamente.");
     } finally {
       setUpdateLoading(null);
     }
@@ -128,7 +105,7 @@ export default function Tarefas() {
       });
       setTarefas(tarefas.filter((tarefa) => tarefa.id !== id));
     } catch (erro) {
-      console.error("Erro ao excluir tarefa:", erro);
+      console.error("", erro);
       alert("Não foi possível excluir a tarefa. Por favor, tente novamente.");
     } finally {
       setUpdateLoading(null);
@@ -143,7 +120,7 @@ export default function Tarefas() {
     setSearchTerm("");
   };
 
-  const filtrosAtivos = hasActiveFilters(filtro, filtroMateria, filtroPrioridade, filtroData, searchTerm);
+  const filtrosAtivos = hasActiveFiltersTarefa(filtro, filtroMateria, filtroPrioridade, filtroData, searchTerm);
 
   const totalItems = tarefasFiltradas.length;
   const startItem = totalItems > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
@@ -158,7 +135,7 @@ export default function Tarefas() {
         buttonLabel="Nova Tarefa"
         description="Cadastre e organize suas tarefas."
         buttonHref="/admin/tarefas/newTarefa"
-        buttonColor="sky"
+        buttonColor="rose"
         canCreate={materias.length > 0}
         alertMessage="Você precisa cadastrar uma matéria antes de criar tarefas."
       />
@@ -181,10 +158,10 @@ export default function Tarefas() {
         searchPlaceholder="Buscar tarefas..."
         statusOptions={[
           { value: "todas", label: "Todas as tarefas" },
-          { value: "pendentes", label: "Pendentes", color: "amber" },
-          { value: "em_andamento", label: "Em andamento", color: "sky" },
-          { value: "concluidas", label: "Concluídas", color: "green" },
-          { value: "canceladas", label: "Canceladas", color: "red" },
+          { value: "pendentes", label: "Pendentes" },
+          { value: "em_andamento", label: "Em andamento" },
+          { value: "concluidas", label: "Concluídas" },
+          { value: "canceladas", label: "Canceladas" },
         ]}
         statusLabel="Status da tarefa"
         priorityLabel="Prioridade"
@@ -199,7 +176,7 @@ export default function Tarefas() {
           </div>
 
           {filtrosAtivos && (
-            <div className="bg-sky-50 text-sky-700 px-3 py-1 rounded-full text-xs">
+            <div className="bg-rose-50 text-rose-700 px-3 py-1 rounded-full text-xs">
               {totalItems} resultado{totalItems !== 1 ? "s" : ""} encontrado{totalItems !== 1 ? "s" : ""}
             </div>
           )}
@@ -242,7 +219,7 @@ export default function Tarefas() {
             {filtrosAtivos ? (
               <button
                 onClick={clearFilters}
-                className="inline-flex items-center px-4 py-2 bg-sky-50 text-sky-700 rounded-lg hover:bg-sky-100"
+                className="inline-flex items-center px-4 py-2 bg-rose-50 text-rose-700 rounded-lg hover:bg-rose-100"
               >
                 <FiX className="mr-2" /> Limpar filtros
               </button>
@@ -250,7 +227,7 @@ export default function Tarefas() {
               podeCriarTarefa && (
                 <Link
                   href="/admin/tarefas/newTarefa"
-                  className="inline-flex items-center px-4 py-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600"
+                  className="inline-flex items-center px-4 py-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600"
                 >
                   <FiPlus className="mr-2" /> Criar nova tarefa
                 </Link>
@@ -282,7 +259,7 @@ export default function Tarefas() {
 
           <button
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-            className="fixed bottom-6 right-6 bg-white shadow-md rounded-full p-3 text-sky-600 hover:bg-sky-50 z-10 lg:hidden"
+            className="fixed bottom-6 right-6 bg-white shadow-md rounded-full p-3 text-rose-600 hover:bg-rose-50 z-10 lg:hidden"
             aria-label="Voltar ao topo"
           >
             <FiArrowUp size={20} />

@@ -17,6 +17,11 @@ import {
   FiChevronDown,
   FiChevronUp,
   FiCornerRightDown,
+  FiTag,
+  FiFlag,
+  FiBook,
+  FiLayers,
+  FiLoader,
 } from "react-icons/fi";
 import { format, isToday, isTomorrow, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -26,6 +31,8 @@ import { Prioridade } from "@/core/enum/prioridades.enum";
 
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Materia } from "@/core/types/materias";
 
 interface Tarefa {
@@ -123,32 +130,26 @@ export default function VisualizarTarefa() {
         status: newStatus,
       });
     } catch (err) {
-      console.error("Erro ao atualizar status:", err);
+      console.error("", err);
       alert("Não foi possível atualizar o status da tarefa. Por favor, tente novamente.");
     } finally {
       setStatusChanging(false);
     }
   };
-  const formatDateFriendly = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-
-      if (isToday(date)) {
-        return `Hoje`;
-      } else if (isTomorrow(date)) {
-        return `Amanhã`;
-      }
-      return format(date, "dd 'de' MMMM, yyyy", { locale: ptBR });
-    } catch (error) {
-      return dateString;
-    }
-  };
 
   const getDateStatus = (dateString: string) => {
+    // Converter a data brasileira (dd/mm/yyyy) para um objeto Date
+    const parts = dateString.split("/");
+    if (parts.length !== 3) return "ok";
+
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1; // Meses em JS são 0-indexed
+    const year = parseInt(parts[2], 10);
+
+    const date = new Date(year, month, day);
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const date = new Date(dateString);
-    date.setHours(0, 0, 0, 0);
 
     if (date < today) {
       return "expired";
@@ -160,6 +161,26 @@ export default function VisualizarTarefa() {
     }
 
     return "ok";
+  };
+
+  const formatRelativeDate = (dateString: string) => {
+    // Converter a data brasileira (dd/mm/yyyy) para um objeto Date
+    const parts = dateString.split("/");
+    if (parts.length !== 3) return dateString;
+
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1; // Meses em JS são 0-indexed
+    const year = parseInt(parts[2], 10);
+
+    const date = new Date(year, month, day);
+
+    if (isToday(date)) {
+      return "Hoje";
+    } else if (isTomorrow(date)) {
+      return "Amanhã";
+    } else {
+      return format(date, "dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+    }
   };
 
   const isTaskExpired = (task: Tarefa) => {
@@ -183,7 +204,7 @@ export default function VisualizarTarefa() {
             variant="outline"
             className="bg-blue-50 text-blue-700 border-blue-200 py-1 px-2.5 gap-1.5 text-xs font-medium"
           >
-            <FiActivity size={12} /> Em andamento
+            <FiLoader size={12} /> Em andamento
           </Badge>
         );
       case Status.CONCLUIDO:
@@ -193,6 +214,15 @@ export default function VisualizarTarefa() {
             className="bg-green-50 text-green-700 border-green-200 py-1 px-2.5 gap-1.5 text-xs font-medium"
           >
             <FiCheckCircle size={12} /> Concluída
+          </Badge>
+        );
+      case Status.CANCELADO:
+        return (
+          <Badge
+            variant="outline"
+            className="bg-slate-50 text-slate-700 border-slate-200 py-1 px-2.5 gap-1.5 text-xs font-medium"
+          >
+            <FiFlag size={12} /> Cancelada
           </Badge>
         );
       default:
@@ -306,6 +336,12 @@ export default function VisualizarTarefa() {
         </Link>
 
         <div className="flex items-center gap-2 self-end sm:self-auto">
+          <Link
+            href={`/admin/tarefas/editar/${id}`}
+            className="flex items-center justify-center bg-sky-50 hover:bg-sky-100 text-sky-600 px-3 py-1.5 rounded-lg transition text-xs font-medium gap-1.5"
+          >
+            <FiEdit3 size={14} /> Editar
+          </Link>
           <button
             onClick={() => setShowDeleteConfirm(true)}
             className="flex items-center justify-center bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-lg transition text-xs font-medium gap-1.5"
@@ -341,98 +377,166 @@ export default function VisualizarTarefa() {
       )}
 
       <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-100">
+        {/* Cabeçalho com estilo baseado na cor da matéria */}
         <div
-          className="py-4 px-4 sm:px-6 border-b border-slate-100 flex flex-col gap-2"
+          className="py-4 px-4 sm:px-6 border-b border-slate-100"
           style={{
             borderLeft: `4px solid ${materiaColor}`,
-            backgroundImage: `linear-gradient(to right, ${materiaColor}08, white)`,
+            backgroundImage: `linear-gradient(to right, ${materiaColor}10, white)`,
           }}
         >
-          <div className="flex justify-between items-start gap-3">
-            <h1 className="text-lg sm:text-xl font-bold text-slate-800">{tarefa.titulo}</h1>
-            {renderStatusBadge(tarefa.status)}
-          </div>
+          <div className="flex justify-between items-start gap-3 flex-wrap sm:flex-nowrap">
+            <div>
+              <h1 className="text-lg sm:text-xl font-bold text-slate-800 mb-1">{tarefa.titulo}</h1>
 
-          <div className="flex flex-wrap gap-2 items-center text-xs text-slate-500">
-            {tarefa.createdAt && (
-              <span className="flex items-center gap-1">
-                <FiInfo size={12} /> Criada em {format(new Date(tarefa.createdAt), "dd/MM/yyyy", { locale: ptBR })}
-              </span>
-            )}
+              <div className="flex flex-wrap gap-2 items-center mb-1">
+                {renderStatusBadge(tarefa.status)}
+                {renderPrioridadeBadge(tarefa.prioridade)}
+              </div>
 
-            {tarefa.updatedAt && tarefa.createdAt !== tarefa.updatedAt && (
-              <span className="flex items-center gap-1">
-                <FiActivity size={12} /> Atualizada em{" "}
-                {format(new Date(tarefa.updatedAt), "dd/MM/yyyy", { locale: ptBR })}
-              </span>
-            )}
+              <div className="flex flex-wrap gap-2 items-center text-xs text-slate-500 mt-2">
+                {tarefa.createdAt && (
+                  <span className="flex items-center gap-1">
+                    <FiInfo size={12} /> Criada em {format(new Date(tarefa.createdAt), "dd/MM/yyyy", { locale: ptBR })}
+                  </span>
+                )}
+
+                {tarefa.updatedAt && tarefa.createdAt !== tarefa.updatedAt && (
+                  <span className="flex items-center gap-1">
+                    <FiActivity size={12} /> Atualizada em{" "}
+                    {format(new Date(tarefa.updatedAt), "dd/MM/yyyy", { locale: ptBR })}
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
+        {/* Conteúdo principal */}
         <div className="p-4 sm:p-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-5 sm:mb-6">
+          {/* Cards de informações importantes */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
+            {/* Card de data de vencimento */}
             <div
               className={`
-                bg-white border rounded-lg p-3 sm:p-4 
+                rounded-lg overflow-hidden border
                 ${
                   dateStatus === "expired"
-                    ? "border-l-4 border-red-400 bg-red-50"
+                    ? "border-red-200 bg-gradient-to-r from-red-50 to-white"
                     : dateStatus === "soon"
-                    ? "border-l-4 border-amber-400 bg-amber-50"
-                    : "border-slate-200"
+                    ? "border-amber-200 bg-gradient-to-r from-amber-50 to-white"
+                    : "border-slate-200 bg-gradient-to-r from-slate-50 to-white"
                 }
               `}
             >
-              <h3 className="text-xs font-medium text-slate-500 mb-1">Data de vencimento</h3>
-              <div
-                className={`flex items-center ${
-                  dateStatus === "expired"
-                    ? "text-red-700"
-                    : dateStatus === "soon"
-                    ? "text-amber-700"
-                    : "text-slate-700"
-                }`}
-              >
-                <div className="mr-2">
-                  {dateStatus === "expired" ? (
-                    <FiAlertCircle size={16} className="text-red-500" />
-                  ) : dateStatus === "soon" ? (
-                    <FiClock size={16} className="text-amber-500" />
-                  ) : (
-                    <FiCalendar size={16} className="text-slate-400" />
-                  )}
-                </div>
-                <div>
-                  <div className="font-medium text-sm">{formatDateFriendly(tarefa.dataVencimento)}</div>
-                  {dateStatus === "expired" && <div className="text-xs text-red-600 mt-0.5">Tarefa vencida</div>}
-                  {dateStatus === "soon" &&
-                    !isToday(new Date(tarefa.dataVencimento)) &&
-                    !isTomorrow(new Date(tarefa.dataVencimento)) && (
-                      <div className="text-xs text-amber-600 mt-0.5">Vence em breve</div>
+              <div className="p-4">
+                <h3 className="text-xs font-medium text-slate-500 mb-1 flex items-center">
+                  <FiCalendar size={14} className="mr-1.5" />
+                  Data de vencimento
+                </h3>
+
+                <div className="mt-1.5">
+                  <div
+                    className={`font-semibold text-base 
+                      ${
+                        dateStatus === "expired"
+                          ? "text-red-700"
+                          : dateStatus === "soon"
+                          ? "text-amber-700"
+                          : "text-slate-700"
+                      }
+                    `}
+                  >
+                    {formatRelativeDate(tarefa.dataVencimento)}
+                  </div>
+
+                  <div className="text-xs mt-1">
+                    {dateStatus === "expired" && (
+                      <span className="inline-flex items-center text-red-600 gap-1">
+                        <FiAlertCircle size={12} /> Tarefa vencida
+                      </span>
                     )}
+                    {dateStatus === "soon" && (
+                      <span className="inline-flex items-center text-amber-600 gap-1">
+                        <FiClock size={12} /> Vence em breve
+                      </span>
+                    )}
+                    {dateStatus === "ok" && (
+                      <span className="inline-flex items-center text-slate-500 gap-1">
+                        <FiInfo size={12} /> Data de entrega
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div
-              className="bg-white border border-slate-200 rounded-lg p-3 sm:p-4"
-              style={{ borderLeftColor: materiaColor, borderLeftWidth: "4px" }}
-            >
-              <h3 className="text-xs font-medium text-slate-500 mb-1">Matéria</h3>
-              <div className="flex items-center gap-2">
-                <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: materiaColor }}></div>
-                <div className="font-medium text-sm" style={{ color: materiaColor }}>
-                  {tarefa.materia?.nome || "Matéria não definida"}
+            {/* Card de matéria */}
+            <div className="rounded-lg overflow-hidden border border-slate-200 bg-gradient-to-r from-slate-50 to-white">
+              <div className="p-4">
+                <h3 className="text-xs font-medium text-slate-500 mb-1 flex items-center">
+                  <FiBook size={14} className="mr-1.5" />
+                  Matéria
+                </h3>
+
+                <div className="mt-1.5 flex items-center">
+                  <div className="h-3 w-3 rounded-full mr-2" style={{ backgroundColor: materiaColor }}></div>
+                  <div className="font-semibold text-base" style={{ color: materiaColor }}>
+                    {tarefa.materia?.nome || "Matéria não definida"}
+                  </div>
+                </div>
+
+                <div className="text-xs mt-1 text-slate-500 flex items-center gap-1">
+                  <FiTag size={12} /> Categoria da tarefa
                 </div>
               </div>
             </div>
 
-            <div className="bg-white border border-slate-200 rounded-lg p-3 sm:p-4">
-              <h3 className="text-xs font-medium text-slate-500 mb-1">Prioridade</h3>
-              <div className="flex items-center">{renderPrioridadeBadge(tarefa.prioridade)}</div>
+            {/* Card de prioridade */}
+            <div className="rounded-lg overflow-hidden border border-slate-200 bg-gradient-to-r from-slate-50 to-white">
+              <div className="p-4">
+                <h3 className="text-xs font-medium text-slate-500 mb-1 flex items-center">
+                  <FiFlag size={14} className="mr-1.5" />
+                  Prioridade
+                </h3>
+
+                <div className="mt-1.5">
+                  <div className="flex items-center">
+                    {tarefa.prioridade === Prioridade.BAIXA && (
+                      <div className="font-semibold text-base text-blue-600 flex items-center gap-2">
+                        <div className="h-3 w-3 rounded-full bg-blue-600"></div>
+                        Baixa
+                      </div>
+                    )}
+                    {tarefa.prioridade === Prioridade.MEDIA && (
+                      <div className="font-semibold text-base text-yellow-600 flex items-center gap-2">
+                        <div className="h-3 w-3 rounded-full bg-yellow-600"></div>
+                        Média
+                      </div>
+                    )}
+                    {tarefa.prioridade === Prioridade.ALTA && (
+                      <div className="font-semibold text-base text-red-600 flex items-center gap-2">
+                        <div className="h-3 w-3 rounded-full bg-red-600"></div>
+                        Alta
+                      </div>
+                    )}
+                    {tarefa.prioridade === Prioridade.URGENTE && (
+                      <div className="font-semibold text-base text-purple-600 flex items-center gap-2">
+                        <div className="h-3 w-3 rounded-full bg-purple-600"></div>
+                        Urgente
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="text-xs mt-1 text-slate-500 flex items-center gap-1">
+                    <FiLayers size={12} /> Nível de importância
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
+          {/* Descrição da tarefa */}
           <div className="mb-6">
             <h2 className="text-sm font-medium text-slate-700 mb-2 flex items-center">
               <FiCornerRightDown size={14} className="mr-1.5 text-slate-400" />
@@ -443,8 +547,8 @@ export default function VisualizarTarefa() {
               className={`
               bg-slate-50 rounded-lg p-4 text-slate-700 border border-slate-200
               ${
-                !expandirDescricao && tarefa.descricao && tarefa.descricao.length > 100
-                  ? "max-h-32 overflow-hidden relative"
+                !expandirDescricao && tarefa.descricao && tarefa.descricao.length > 150
+                  ? "max-h-40 overflow-hidden relative"
                   : ""
               }
             `}
@@ -455,7 +559,7 @@ export default function VisualizarTarefa() {
                 <div className="text-slate-400 italic text-sm">Nenhuma descrição fornecida</div>
               )}
 
-              {!expandirDescricao && tarefa.descricao && tarefa.descricao.length > 100 && (
+              {!expandirDescricao && tarefa.descricao && tarefa.descricao.length > 150 && (
                 <>
                   <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-slate-50 to-transparent"></div>
                   <button
@@ -467,7 +571,7 @@ export default function VisualizarTarefa() {
                 </>
               )}
 
-              {expandirDescricao && tarefa.descricao && tarefa.descricao.length > 100 && (
+              {expandirDescricao && tarefa.descricao && tarefa.descricao.length > 150 && (
                 <button
                   onClick={() => setExpandirDescricao(false)}
                   className="mt-3 text-xs bg-white px-2 py-1 rounded-md border border-slate-200 text-sky-600 hover:text-sky-700 flex items-center gap-1 ml-auto"
@@ -480,6 +584,7 @@ export default function VisualizarTarefa() {
 
           <Separator className="mb-5 bg-slate-100" />
 
+          {/* Seção de atualização de status */}
           <div>
             <h2 className="text-sm font-medium text-slate-700 mb-3 flex items-center">
               <FiActivity size={14} className="mr-1.5 text-slate-400" />
@@ -516,7 +621,7 @@ export default function VisualizarTarefa() {
                   ${statusChanging ? "opacity-60 cursor-not-allowed" : ""}
                 `}
               >
-                <FiActivity size={14} /> Em andamento
+                <FiLoader size={14} /> Em andamento
               </button>
 
               <button
@@ -535,6 +640,22 @@ export default function VisualizarTarefa() {
                 <FiCheckCircle size={14} /> Concluída
               </button>
 
+              <button
+                onClick={() => handleStatusChange(Status.CANCELADO)}
+                disabled={statusChanging || tarefa.status === Status.CANCELADO}
+                className={`
+                  flex items-center rounded-lg px-3 py-2 transition text-xs font-medium gap-1.5
+                  ${
+                    tarefa.status === Status.CANCELADO
+                      ? "bg-slate-100 text-slate-700 font-medium cursor-default ring-1 ring-slate-200"
+                      : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
+                  }
+                  ${statusChanging ? "opacity-60 cursor-not-allowed" : ""}
+                `}
+              >
+                <FiFlag size={14} /> Cancelada
+              </button>
+
               {statusChanging && (
                 <div className="flex items-center text-sky-600 text-xs font-medium">
                   <div className="h-3 w-3 border-2 border-current border-t-transparent rounded-full animate-spin mr-2"></div>
@@ -550,7 +671,14 @@ export default function VisualizarTarefa() {
               </div>
             )}
 
-            {tarefa.status !== Status.CONCLUIDO && taskExpired && (
+            {tarefa.status === Status.CANCELADO && (
+              <div className="mt-3 text-xs text-slate-600 bg-slate-50 py-2 px-3 rounded-md border border-slate-100 flex items-center">
+                <FiInfo size={14} className="mr-1.5" />
+                Esta tarefa foi cancelada.
+              </div>
+            )}
+
+            {tarefa.status !== Status.CONCLUIDO && tarefa.status !== Status.CANCELADO && taskExpired && (
               <div className="mt-3 text-xs text-red-600 bg-red-50 py-2 px-3 rounded-md border border-red-100 flex items-center">
                 <FiAlertCircle size={14} className="mr-1.5" />
                 Esta tarefa está vencida. Considere atualizá-la ou marcá-la como concluída.

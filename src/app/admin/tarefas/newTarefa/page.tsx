@@ -61,7 +61,7 @@ export default function NovaTarefa() {
           }));
         }
       } catch (err) {
-        console.error("Erro ao buscar matérias:", err);
+        console.error("", err);
       }
     };
 
@@ -96,14 +96,18 @@ export default function NovaTarefa() {
       return;
     }
 
-    const selectedDate = new Date(formData.dataVencimento);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    selectedDate.setHours(0, 0, 0, 0);
+    let dataFormatada;
 
-    if (selectedDate < today) {
-      setError("A data de vencimento não pode ser no passado.");
-      return;
+    if (formData.dataVencimento) {
+      if (formData.dataVencimento.includes("/")) {
+        const [dia, mes, ano] = formData.dataVencimento.split("/").map(Number);
+        dataFormatada = new Date(ano, mes - 1, dia, 12, 0, 0).toISOString();
+      } else if (formData.dataVencimento.includes("-")) {
+        const date = new Date(formData.dataVencimento);
+        dataFormatada = date.toISOString();
+      } else {
+        dataFormatada = null;
+      }
     }
 
     setIsLoading(true);
@@ -114,7 +118,7 @@ export default function NovaTarefa() {
         ...formData,
         titulo: formData.titulo.trim(),
         status: formData.status,
-        dataVencimento: new Date(formData.dataVencimento).toISOString(),
+        dataVencimento: dataFormatada || null,
         usuarioId: getUser?.id || "",
       };
 
@@ -125,7 +129,7 @@ export default function NovaTarefa() {
 
       router.push("/admin/tarefas");
     } catch (err) {
-      console.error("Erro ao criar tarefa:", err);
+      console.error("", err);
       setError("Falha ao criar a tarefa. Verifique os campos e tente novamente.");
     } finally {
       setIsLoading(false);

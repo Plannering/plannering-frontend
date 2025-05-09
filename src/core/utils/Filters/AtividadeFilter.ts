@@ -1,165 +1,151 @@
+import { Atividade } from "@/core/types/atividades";
 import { Status } from "@/core/enum/status.enum";
 
-type Atividade = {
-  id: string;
-  titulo: string;
-  descricao?: string;
-  dataVencimento?: string | Date;
-  peso?: number;
-  nota?: number;
-  status: Status;
-  dataCriacao: string;
-  dataAtualizacao: string;
-  usuarioId: string;
-  materiaId?: string;
-  materia?: { id: string; nome: string; cor: string };
+const estaNoIntervalo = (data: Date, inicioIntervalo: Date, fimIntervalo: Date): boolean => {
+  return data >= inicioIntervalo && data <= fimIntervalo;
 };
 
-/**
- * Filtra um array de atividades com base nos critérios fornecidos
- * @param atividades Lista de atividades a serem filtradas
- * @param filtro Filtro de status (todas, pendentes, etc)
- * @param filtroMateria ID da matéria para filtrar
- * @param filtroData Filtro de data (hoje, esta_semana, etc)
- * @param searchTerm Termo de busca para título e descrição
- * @returns Array de atividades filtradas e ordenadas
- */
+const converterDataBrasileira = (data: string | Date | null | undefined): Date | null => {
+  if (!data) return null;
+
+  if (data instanceof Date) return data;
+
+  const partes = data.split("/");
+  if (partes.length !== 3) return null;
+
+  const dia = parseInt(partes[0], 10);
+  const mes = parseInt(partes[1], 10) - 1;
+  const ano = parseInt(partes[2], 10);
+
+  return new Date(ano, mes, dia);
+};
+
+export const ordenarAtividadesPorData = (atividades: Atividade[]): Atividade[] => {
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+
+  return [...atividades].sort((a, b) => {
+    const dataA = converterDataBrasileira(a.dataVencimento);
+    const dataB = converterDataBrasileira(b.dataVencimento);
+
+    if (!dataA) return 1;
+    if (!dataB) return -1;
+
+    const aVencida = dataA < hoje;
+    const bVencida = dataB < hoje;
+
+    if (aVencida && !bVencida) return 1;
+    if (!aVencida && bVencida) return -1;
+
+    if (aVencida && bVencida) {
+      return dataB.getTime() - dataA.getTime();
+    }
+
+    return dataA.getTime() - dataB.getTime();
+  });
+};
+
+const aplicarFiltroData = (atividade: Atividade, filtroData: string): boolean => {
+  if (!filtroData || filtroData === "") return true;
+
+  if (!atividade.dataVencimento) return false;
+
+  const dataEntrega = converterDataBrasileira(atividade.dataVencimento);
+  if (!dataEntrega) return false;
+
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+
+  const amanha = new Date(hoje);
+  amanha.setDate(amanha.getDate() + 1);
+
+  const inicioSemana = new Date(hoje);
+  inicioSemana.setDate(hoje.getDate() - hoje.getDay());
+  const fimSemana = new Date(inicioSemana);
+  fimSemana.setDate(inicioSemana.getDate() + 6);
+
+  const em7Dias = new Date(hoje);
+  em7Dias.setDate(hoje.getDate() + 7);
+
+  switch (filtroData) {
+    case "hoje":
+      return dataEntrega.toDateString() === hoje.toDateString();
+
+    case "esta_semana":
+      return estaNoIntervalo(dataEntrega, inicioSemana, fimSemana);
+
+    case "atrasadas":
+      return dataEntrega < hoje && atividade.status !== Status.CONCLUIDO && atividade.status !== Status.CANCELADO;
+
+    case "proximos_7_dias":
+      return estaNoIntervalo(dataEntrega, hoje, em7Dias);
+
+    default:
+      return true;
+  }
+};
+
 export const filtrarAtividades = (
   atividades: Atividade[],
-  filtro: string,
+  filtroStatus: string,
   filtroMateria: string,
-  filtroData: string,
   searchTerm: string,
+  filtroData: string,
+  mostrarConcluidas: boolean = false,
 ): Atividade[] => {
-  return atividades
+  const atividadesFiltradas = atividades.filter((atividade) => {
+    if (
+      !mostrarConcluidas &&
+      filtroStatus !== "concluidas" &&
+      filtroStatus !== "canceladas" &&
+      (atividade.status === Status.CONCLUIDO || atividade.status === Status.CANCELADO)
+    ) {
+      return false;
+    }
 
-    .filter((atividade) => {
-      if (filtro !== "concluidas" && atividade.status === Status.CONCLUIDO) {
-        return false;
+    if (filtroStatus !== "todas") {
+      let statusFiltro = "";
+      switch (filtroStatus) {
+        case "pendentes":
+          statusFiltro = Status.PENDENTE;
+          break;
+        case "em_andamento":
+          statusFiltro = Status.EM_ANDAMENTO;
+          break;
+        case "concluidas":
+          statusFiltro = Status.CONCLUIDO;
+          break;
+        case "canceladas":
+          statusFiltro = Status.CANCELADO;
+          break;
       }
 
-      if (filtro === "todas") return true;
-      if (filtro === "pendentes") return atividade.status === Status.PENDENTE;
-      if (filtro === "em_andamento") return atividade.status === Status.EM_ANDAMENTO;
-      if (filtro === "concluidas") return atividade.status === Status.CONCLUIDO;
-      if (filtro === "canceladas") return atividade.status === Status.CANCELADO;
+      if (atividade.status !== statusFiltro) return false;
+    }
 
-      return true;
-    })
+    if (filtroMateria && atividade.materiaId !== filtroMateria) return false;
 
-    .filter((atividade) => filtroMateria === "" || (atividade.materiaId && atividade.materiaId === filtroMateria))
+    if (!aplicarFiltroData(atividade, filtroData)) return false;
 
-    .filter((atividade) => {
-      if (filtroData === "") return true;
+    if (searchTerm) {
+      const termoBusca = searchTerm.toLowerCase();
+      const tituloMatch = atividade.titulo?.toLowerCase().includes(termoBusca);
+      const descricaoMatch = atividade.descricao?.toLowerCase().includes(termoBusca);
 
-      const hoje = new Date();
-      hoje.setHours(0, 0, 0, 0);
+      if (!tituloMatch && !descricaoMatch) return false;
+    }
 
-      if (!atividade.dataVencimento) {
-        return (
-          filtroData !== "atrasadas" &&
-          filtroData !== "hoje" &&
-          filtroData !== "esta_semana" &&
-          filtroData !== "proximos_7_dias"
-        );
-      }
+    return true;
+  });
 
-      const dataVencimento = new Date(atividade.dataVencimento);
-      dataVencimento.setHours(0, 0, 0, 0);
-
-      if (filtroData === "hoje") {
-        return dataVencimento.getTime() === hoje.getTime();
-      }
-
-      if (filtroData === "esta_semana") {
-        const diaSemana = hoje.getDay();
-        const inicioSemana = new Date(hoje);
-
-        inicioSemana.setDate(hoje.getDate() - (diaSemana === 0 ? 6 : diaSemana - 1));
-        const fimSemana = new Date(inicioSemana);
-        fimSemana.setDate(inicioSemana.getDate() + 6);
-        return dataVencimento >= inicioSemana && dataVencimento <= fimSemana;
-      }
-
-      if (filtroData === "atrasadas") {
-        return dataVencimento < hoje && atividade.status !== Status.CONCLUIDO;
-      }
-
-      if (filtroData === "proximos_7_dias") {
-        const proximosSete = new Date(hoje);
-        proximosSete.setDate(hoje.getDate() + 7);
-        return dataVencimento >= hoje && dataVencimento <= proximosSete;
-      }
-
-      return true;
-    })
-
-    .filter(
-      (atividade) =>
-        searchTerm === "" ||
-        atividade.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (atividade.descricao?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false),
-    )
-
-    .filter((atividade) => {
-      const hoje = new Date();
-      hoje.setHours(0, 0, 0, 0);
-
-      if (filtroData === "atrasadas") return true;
-
-      if (!atividade.dataVencimento) return true;
-
-      const dataVencimento = new Date(atividade.dataVencimento);
-      dataVencimento.setHours(0, 0, 0, 0);
-
-      return !(dataVencimento < hoje && atividade.status !== Status.CONCLUIDO);
-    })
-
-    .sort((a, b) => {
-      const statusOrdem = {
-        [Status.PENDENTE]: 0,
-        [Status.EM_ANDAMENTO]: 1,
-        [Status.CONCLUIDO]: 2,
-        [Status.CANCELADO]: 3,
-      };
-
-      const statusValorA = statusOrdem[a.status] || 0;
-      const statusValorB = statusOrdem[b.status] || 0;
-
-      if (statusValorA !== statusValorB) {
-        return statusValorA - statusValorB;
-      }
-
-      if (a.peso !== undefined && b.peso !== undefined && a.peso !== b.peso) {
-        return b.peso - a.peso;
-      }
-
-      if (a.dataVencimento && b.dataVencimento) {
-        return new Date(a.dataVencimento).getTime() - new Date(b.dataVencimento).getTime();
-      }
-
-      if (a.dataVencimento) return -1;
-      if (b.dataVencimento) return 1;
-
-      return 0;
-    });
+  return ordenarAtividadesPorData(atividadesFiltradas);
 };
 
-export const hasActiveFilters = (
+export const hasActiveFiltersAtividade = (
   filtro: string,
   filtroMateria: string,
   filtroData: string,
   searchTerm: string,
 ): boolean => {
   return filtro !== "todas" || filtroMateria !== "" || filtroData !== "" || searchTerm !== "";
-};
-
-export const getPaginatedItems = <T>(items: T[], currentPage: number, itemsPerPage: number): T[] => {
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  return items.slice(startIndex, endIndex);
-};
-
-export const calculateTotalPages = (totalItems: number, itemsPerPage: number): number => {
-  return Math.ceil(totalItems / itemsPerPage);
 };

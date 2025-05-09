@@ -5,19 +5,13 @@ import Link from "next/link";
 import { FiPlus, FiAlertCircle, FiX, FiArrowUp, FiHelpCircle } from "react-icons/fi";
 
 import apiFetch from "@/core/api/fetcher";
-import { Status } from "@/core/enum/status.enum";
 import { ProvaCard } from "@/core/components/Cads/ProvaCards";
 import { FilterBar } from "@/core/components/Paginacao/FiltroBar";
 import { Pagination } from "@/core/components/Paginacao/Paginacao";
 import { Prova } from "@/core/types/provas";
-import { buscarProvabyId } from "@/core/api/provas";
 import HeaderCard from "@/core/components/Cads/HeaderCard";
-import {
-  filtrarProvas,
-  hasActiveFilters,
-  getPaginatedItems,
-  calculateTotalPages,
-} from "@/core/utils/Filters/ProvaFilter";
+import { filtrarProvas, hasActiveFiltersProva } from "@/core/utils/Filters/ProvaFilter";
+import { calculateTotalPages, getPaginatedItems } from "@/core/utils/paginatedItems";
 
 interface Materia {
   id: string;
@@ -32,7 +26,7 @@ export default function Provas() {
   const [error, setError] = useState<string | null>(null);
   const [updateLoading, setUpdateLoading] = useState<string | null>(null);
 
-  const [filtro, setFiltro] = useState<string>("pendentes");
+  const [filtro, setFiltro] = useState<string>("todas");
   const [filtroMateria, setFiltroMateria] = useState<string>("");
   const [filtroData, setFiltroData] = useState<string>("");
   const [filtroPrioridade, setFiltroPrioridade] = useState<string>("");
@@ -81,41 +75,23 @@ export default function Provas() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleStatusChange = async (provaCompleta: Prova) => {
-    setUpdateLoading(provaCompleta.id);
+  const handleStatusChange = async (alterarStatus: Prova) => {
+    setUpdateLoading(alterarStatus.id);
 
     try {
-      const provaAtual = await buscarProvabyId(provaCompleta.id);
-      const provaAtualizada = {
-        ...provaAtual,
-        status: Status.CONCLUIDO,
-        titulo: provaAtual.titulo ?? "",
-        descricao: provaAtual.descricao ?? "",
-        data: provaAtual.data,
-        nota: provaAtual.nota,
-        local: provaAtual.local || "",
-        materiaId: provaAtual.materiaId || "",
-        usuarioId: provaAtual.usuarioId || "",
-      };
-
-      await apiFetch(`provas/${provaAtual.id}`, {
+      await apiFetch(`provas/${alterarStatus.id}`, {
         method: "PATCH",
-        body: JSON.stringify(provaAtualizada),
+        body: JSON.stringify({ status: alterarStatus.status }),
       });
 
       setProvas((provasAnteriores) =>
         provasAnteriores.map((prova) =>
-          prova.id === provaCompleta.id
-            ? {
-                ...prova,
-                status: Status.CONCLUIDO,
-              }
-            : prova,
+          prova.id === alterarStatus.id ? { ...prova, status: alterarStatus.status } : prova,
         ),
       );
     } catch (erro) {
       console.error("Erro ao atualizar status:", erro);
-      alert("Não foi possível atualizar o status da prova. Por favor, tente novamente.");
+      alert("Não foi possível atualizar o status da tarefa. Por favor, tente novamente.");
     } finally {
       setUpdateLoading(null);
     }
@@ -144,7 +120,7 @@ export default function Provas() {
     setSearchTerm("");
   };
 
-  const filtrosAtivos = hasActiveFilters(filtro, filtroMateria, filtroData, searchTerm);
+  const filtrosAtivos = hasActiveFiltersProva(filtro, filtroMateria, filtroData, searchTerm);
 
   const totalItems = provasFiltradas.length;
   const startItem = totalItems > 0 ? (currentPage - 1) * itemsPerPage + 1 : 0;
@@ -159,7 +135,7 @@ export default function Provas() {
         description="Organize suas provas e avaliações"
         buttonLabel="Nova Prova"
         buttonHref="/admin/provas/newProva"
-        buttonColor="sky"
+        buttonColor="indigo"
         canCreate={materias.length > 0}
         alertMessage="Você precisa cadastrar uma matéria antes de criar provas."
       />
@@ -182,10 +158,10 @@ export default function Provas() {
         searchPlaceholder="Buscar provas..."
         statusOptions={[
           { value: "todas", label: "Todas as provas" },
-          { value: "pendentes", label: "Provas pendentes", color: "amber" },
-          { value: "em_andamento", label: "Estudando", color: "sky" },
-          { value: "concluidas", label: "Realizadas", color: "green" },
-          { value: "canceladas", label: "Canceladas", color: "red" },
+          { value: "pendentes", label: "Provas pendentes" },
+          { value: "em_andamento", label: "Estudando" },
+          { value: "concluidas", label: "Realizadas" },
+          { value: "canceladas", label: "Canceladas" },
         ]}
         statusLabel="Status da prova"
         priorityLabel="Prioridade"
@@ -201,7 +177,7 @@ export default function Provas() {
           </div>
 
           {filtrosAtivos && (
-            <div className="bg-sky-50 text-sky-700 px-3 py-1 rounded-full text-xs">
+            <div className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full text-xs">
               {totalItems} resultado{totalItems !== 1 ? "s" : ""} encontrado{totalItems !== 1 ? "s" : ""}
             </div>
           )}
@@ -244,7 +220,7 @@ export default function Provas() {
             {filtrosAtivos ? (
               <button
                 onClick={clearFilters}
-                className="inline-flex items-center px-4 py-2 bg-sky-50 text-sky-700 rounded-lg hover:bg-sky-100"
+                className="inline-flex items-center px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100"
               >
                 <FiX className="mr-2" /> Limpar filtros
               </button>
@@ -252,7 +228,7 @@ export default function Provas() {
               podeCriarProva && (
                 <Link
                   href="/admin/provas/newProva"
-                  className="inline-flex items-center px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600"
+                  className="inline-flex items-center px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600"
                 >
                   <FiPlus className="mr-2" /> Criar nova prova
                 </Link>
@@ -286,7 +262,7 @@ export default function Provas() {
 
           <button
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-            className="fixed bottom-6 right-6 bg-white shadow-md rounded-full p-3 text-purple-600 hover:bg-purple-50 z-10 lg:hidden"
+            className="fixed bottom-6 right-6 bg-white shadow-md rounded-full p-3 text-indigo-600 hover:bg-indigo-50 z-10 lg:hidden"
             aria-label="Voltar ao topo"
           >
             <FiArrowUp size={20} />

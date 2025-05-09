@@ -191,20 +191,34 @@ export default function NovaProva() {
                       htmlFor="nota"
                       className="text-xs sm:text-sm font-medium mb-1 sm:mb-1.5 flex items-center text-slate-700"
                     >
-                      <FiAward className="mr-1.5 text-sky-500" size={14} />
-                      Valor <span className="text-red-500">*</span>
+                      <FiAward className=" text-sky-500" size={14} />
+                      Nota <span className="text-red-500">*</span>
                     </Label>
                     <Input
                       id="nota"
                       name="nota"
                       type="number"
-                      min="0"
-                      max="10"
-                      step="0.1"
-                      value={formData.nota}
-                      onChange={handleChange}
+                      min={0}
+                      max={10}
+                      step={0.1}
+                      value={formData.nota === 0 ? "" : formData.nota}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        const parsed = value === "" ? 0 : parseFloat(value.replace(",", "."));
+                        if (parsed > 10) {
+                          setError("O valor máximo para a nota é 10.");
+                        } else {
+                          setError(null);
+                        }
+                        setFormData((prev) => ({
+                          ...prev,
+                          nota: value === "" ? 0 : parsed,
+                        }));
+                      }}
                       placeholder="Ex: 10.0"
                       className="h-10 sm:h-12 text-sm bg-white shadow-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
+                      inputMode="decimal"
+                      pattern="[0-9]+([,\.][0-9]{1,2})?"
                     />
                   </div>
                 </div>
